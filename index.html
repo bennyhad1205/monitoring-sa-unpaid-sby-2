@@ -43,7 +43,8 @@ h1{font-size:clamp(20px,3vw,30px);margin:0;letter-spacing:.4px}.eyebrow{color:#e
 .perf-kpi{padding:17px}.perf-kpi .label{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.7px}.perf-kpi .num{font-size:27px;font-weight:850;margin-top:8px}
 .perf-filters{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;margin-bottom:16px}
 .perf-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-bottom:16px}
-.perf-table{overflow:auto;max-height:560px}.perf-table table{min-width:1050px}
+ .perf-table{overflow:auto;max-height:560px}.perf-table table{min-width:760px}
+.perf-compare-filter{width:min(260px,100%)}.perf-compare-filter label{display:block;font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.8px;margin:0 0 7px}.perf-compare-filter select{width:100%;border:1px solid var(--line);background:#fbfcfe;border-radius:10px;padding:10px 12px;color:var(--ink)}
 .growth-up{color:#159b72;font-weight:800}.growth-down{color:#dc3e4d;font-weight:800}
 @media(max-width:850px){.perf-kpis{grid-template-columns:repeat(2,1fr)}.perf-layout{grid-template-columns:1fr}}
 @media(max-width:560px){.perf-filters{grid-template-columns:1fr}}
@@ -100,8 +101,12 @@ h1{font-size:clamp(20px,3vw,30px);margin:0;letter-spacing:.4px}.eyebrow{color:#e
   <div class="card panel"><h3>Ringkasan Performa ASM</h3><div class="ranking" id="perfAsmRanking"><div class="empty">Menunggu data…</div></div></div>
  </section>
  <section class="card tablecard" style="margin-bottom:16px">
-  <div class="tablehead"><div><h3>Perbandingan Penjualan per AE</h3><div class="count" id="perfCompareCount">—</div></div><div class="count">Berdasarkan tanggal aktivasi</div></div>
-  <div class="tablewrap perf-table"><table><thead><tr><th>No</th><th>ASM</th><th>AE / Sales Agent</th><th>Bulan Ini</th><th>Bulan Lalu</th><th>Selisih</th><th>Pertumbuhan</th><th>Total Poin Bulan Ini</th><th>Revenue Bulan Ini</th></tr></thead><tbody id="perfCompareBody"><tr><td colspan="9" class="empty">Mengambil data…</td></tr></tbody></table></div>
+  <div class="tablehead"><div><h3>Perbandingan SA per ASM</h3><div class="count" id="perfAsmCompareCount">—</div></div><div class="count">Bulan berjalan dibanding tanggal kalender yang sama bulan lalu</div></div>
+  <div class="tablewrap perf-table"><table style="min-width:760px"><thead><tr><th>No</th><th>Nama ASM</th><th>SA Bulan Ini</th><th>SA Bulan Lalu</th><th>Selisih</th><th>Growth</th></tr></thead><tbody id="perfAsmCompareBody"><tr><td colspan="6" class="empty">Mengambil data…</td></tr></tbody></table></div>
+ </section>
+ <section class="card tablecard" style="margin-bottom:16px">
+  <div class="tablehead"><div><h3>Perbandingan SA per AE</h3><div class="count" id="perfCompareCount">—</div></div><div class="field perf-compare-filter"><label for="perfCompareAsm">FILTER NAMA ASM</label><select id="perfCompareAsm"><option value="">Semua ASM</option></select></div></div>
+  <div class="tablewrap perf-table"><table style="min-width:760px"><thead><tr><th>No</th><th>Nama ASM</th><th>Nama AE</th><th>SA Bulan Ini</th><th>SA Bulan Lalu</th><th>Selisih</th><th>Growth</th></tr></thead><tbody id="perfCompareBody"><tr><td colspan="7" class="empty">Mengambil data…</td></tr></tbody></table></div>
  </section>
  <section class="card tablecard">
   <div class="tablehead"><div><h3>Detail Aktivasi Bulan Berjalan</h3><div class="count" id="perfDetailCount">—</div></div><div class="count">Service Status hanya informasi, bukan filter penjualan</div></div>
@@ -297,32 +302,47 @@ window.loadPerformance=function(){
 }
 function renderPerformance(){
  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),day=now.getDate();
- const prevLast=new Date(y,m,0).getDate(),compareDay=Math.min(day,prevLast);
+ const compareDay=Math.min(day,new Date(y,m,0).getDate());
  const startNow=new Date(y,m,1),endNow=new Date(y,m,day,23,59,59);
  const startPrev=new Date(y,m-1,1),endPrev=new Date(y,m-1,compareDay,23,59,59);
  $('perfPeriod').textContent=`${perfMonthLabel(now)} • 1–${day} ${now.toLocaleDateString('id-ID',{month:'short'})} dibanding 1–${compareDay} ${startPrev.toLocaleDateString('id-ID',{month:'short'})}`;
+ const inPeriod=(r,from,to)=>r.activation>=from&&r.activation<=to;
  const asmList=[...new Set(perfRows.map(r=>r.asm).filter(Boolean))].sort(),oldAsm=$('perfAsm').value;
  $('perfAsm').innerHTML='<option value="">Semua ASM</option>'+asmList.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
  $('perfAsm').value=asmList.includes(oldAsm)?oldAsm:'';
- const asmFilter=$('perfAsm').value, aeList=[...new Set(perfRows.filter(r=>!asmFilter||r.asm===asmFilter).map(r=>r.ae).filter(Boolean))].sort(),oldAe=$('perfAe').value;
+ const asmFilter=$('perfAsm').value,aeList=[...new Set(perfRows.filter(r=>!asmFilter||r.asm===asmFilter).map(r=>r.ae).filter(Boolean))].sort(),oldAe=$('perfAe').value;
  $('perfAe').innerHTML='<option value="">Semua AE</option>'+aeList.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
  $('perfAe').value=aeList.includes(oldAe)?oldAe:'';
  const a=$('perfAsm').value,e=$('perfAe').value,base=perfRows.filter(r=>(!a||r.asm===a)&&(!e||r.ae===e));
- const cur=base.filter(r=>r.activation>=startNow&&r.activation<=endNow),prev=base.filter(r=>r.activation>=startPrev&&r.activation<=endPrev);
- const sum=arr=>({count:arr.length,poin:arr.reduce((v,r)=>v+r.poin,0),revenue:arr.reduce((v,r)=>v+r.revenue,0)});
- const cs=sum(cur),ps=sum(prev),diff=cs.count-ps.count,growth=ps.count?diff/ps.count*100:(cs.count?100:0);
- $('pTotal').textContent=perfFmt(cs.count);$('pPrev').textContent=perfFmt(ps.count);$('pDiff').textContent=(diff>0?'+':'')+perfFmt(diff);$('pGrowth').textContent=(growth>0?'+':'')+growth.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
- const groups={};base.forEach(r=>{const key=r.ae||'Nama AE kosong';groups[key]??={asm:r.asm||'—',ae:key,cur:[],prev:[]};if(r.activation>=startNow&&r.activation<=endNow)groups[key].cur.push(r);if(r.activation>=startPrev&&r.activation<=endPrev)groups[key].prev.push(r)});
- const list=Object.values(groups).map(g=>({...g,c:sum(g.cur),p:sum(g.prev)})).sort((x,z)=>z.c.count-x.c.count);
- $('perfCompareCount').textContent=list.length+' AE';
- $('perfCompareBody').innerHTML=list.length?list.map((g,i)=>{const d=g.c.count-g.p.count,gr=g.p.count?d/g.p.count*100:(g.c.count?100:0);return `<tr><td>${i+1}</td><td>${esc(g.asm)}</td><td><b>${esc(g.ae)}</b></td><td>${perfFmt(g.c.count)}</td><td>${perfFmt(g.p.count)}</td><td class="${d>0?'growth-up':d<0?'growth-down':''}">${d>0?'+':''}${perfFmt(d)}</td><td class="${gr>0?'growth-up':gr<0?'growth-down':''}">${gr>0?'+':''}${gr.toLocaleString('id-ID',{maximumFractionDigits:1})}%</td><td>${perfFmt(g.c.poin)}</td><td>${perfMoney(g.c.revenue)}</td></tr>`}).join(''):'<tr><td colspan="9" class="empty">Tidak ada data AE untuk periode ini.</td></tr>';
- const top=list.slice(0,8);$('perfRanking').innerHTML=top.length?top.map((g,i)=>`<div class="rank"><span class="n">${i+1}</span><span class="name">${esc(g.ae)}</span><b>${perfFmt(g.c.count)}</b></div>`).join(''):'<div class="empty">Tidak ada data</div>';
+ const cur=base.filter(r=>inPeriod(r,startNow,endNow)),prev=base.filter(r=>inPeriod(r,startPrev,endPrev));
+ const cs=cur.length,ps=prev.length,diff=cs-ps,growth=ps?diff/ps*100:(cs?100:0);
+ $('pTotal').textContent=perfFmt(cs);$('pPrev').textContent=perfFmt(ps);$('pDiff').textContent=(diff>0?'+':'')+perfFmt(diff);$('pGrowth').textContent=(growth>0?'+':'')+growth.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
+ // Perbandingan seluruh ASM, tidak terpengaruh filter AE.
+ const asmGroups={};
+ perfRows.forEach(r=>{if(!r.asm)return;asmGroups[r.asm]??={name:r.asm,cur:0,prev:0};if(inPeriod(r,startNow,endNow))asmGroups[r.asm].cur++;if(inPeriod(r,startPrev,endPrev))asmGroups[r.asm].prev++;});
+ const asmData=Object.values(asmGroups).sort((x,z)=>z.cur-x.cur||x.name.localeCompare(z.name,'id'));
+ $('perfAsmCompareCount').textContent=asmData.length+' ASM';
+ $('perfAsmCompareBody').innerHTML=asmData.length?asmData.map((g,i)=>{const d=g.cur-g.prev,p=g.prev?d/g.prev*100:(g.cur?100:0);return `<tr><td>${i+1}</td><td><b>${esc(g.name)}</b></td><td>${perfFmt(g.cur)}</td><td>${perfFmt(g.prev)}</td><td class="${d>0?'growth-up':d<0?'growth-down':''}">${d>0?'+':''}${perfFmt(d)}</td><td class="${p>0?'growth-up':p<0?'growth-down':''}">${p>0?'+':''}${p.toLocaleString('id-ID',{maximumFractionDigits:1})}%</td></tr>`}).join(''):'<tr><td colspan="6" class="empty">Tidak ada data ASM untuk periode ini.</td></tr>';
+ // Filter ASM khusus tabel perbandingan AE.
+ const compareAsms=[...new Set(perfRows.map(r=>r.asm).filter(Boolean))].sort(),oldCompare=$('perfCompareAsm').value;
+ $('perfCompareAsm').innerHTML='<option value="">Semua ASM</option>'+compareAsms.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
+ $('perfCompareAsm').value=compareAsms.includes(oldCompare)?oldCompare:'';
+ const selected=$('perfCompareAsm').value,aeGroups={};
+ perfRows.filter(r=>!selected||r.asm===selected).forEach(r=>{const key=(r.asm||'ASM tidak tersedia')+'||'+(r.ae||'Nama AE kosong');aeGroups[key]??={asm:r.asm||'—',ae:r.ae||'Nama AE kosong',cur:0,prev:0};if(inPeriod(r,startNow,endNow))aeGroups[key].cur++;if(inPeriod(r,startPrev,endPrev))aeGroups[key].prev++;});
+ const aeData=Object.values(aeGroups).sort((x,z)=>z.cur-x.cur||x.ae.localeCompare(z.ae,'id'));
+ $('perfCompareCount').textContent=aeData.length+' AE';
+ $('perfCompareBody').innerHTML=aeData.length?aeData.map((g,i)=>{const d=g.cur-g.prev,p=g.prev?d/g.prev*100:(g.cur?100:0);return `<tr><td>${i+1}</td><td>${esc(g.asm)}</td><td><b>${esc(g.ae)}</b></td><td>${perfFmt(g.cur)}</td><td>${perfFmt(g.prev)}</td><td class="${d>0?'growth-up':d<0?'growth-down':''}">${d>0?'+':''}${perfFmt(d)}</td><td class="${p>0?'growth-up':p<0?'growth-down':''}">${p>0?'+':''}${p.toLocaleString('id-ID',{maximumFractionDigits:1})}%</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Tidak ada data AE untuk ASM/periode ini.</td></tr>';
+ // Ranking mengikuti filter ASM dan AE utama.
+ const rankGroups={};cur.forEach(r=>{const key=r.ae||'Nama AE kosong';rankGroups[key]=(rankGroups[key]||0)+1;});
+ const top=Object.entries(rankGroups).sort((x,z)=>z[1]-x[1]).slice(0,8);
+ $('perfRanking').innerHTML=top.length?top.map(([n,v],i)=>`<div class="rank"><span class="n">${i+1}</span><span class="name">${esc(n)}</span><b>${perfFmt(v)}</b></div>`).join(''):'<div class="empty">Tidak ada data</div>';
  const ag={};cur.forEach(r=>{const k=r.asm||'ASM tidak tersedia';ag[k]=(ag[k]||0)+1});const at=Object.entries(ag).sort((x,z)=>z[1]-x[1]).slice(0,8);$('perfAsmRanking').innerHTML=at.length?at.map(([n,v],i)=>`<div class="rank"><span class="n">${i+1}</span><span class="name">${esc(n)}</span><b>${perfFmt(v)}</b></div>`).join(''):'<div class="empty">Tidak ada data</div>';
  const details=cur.slice().sort((x,z)=>z.activation-x.activation);$('perfDetailCount').textContent=perfFmt(details.length)+' aktivasi';
  $('perfDetailBody').innerHTML=details.length?details.map((r,i)=>`<tr><td>${i+1}</td><td>${fmtDate(r.activation)}</td><td>${esc(r.asm)||'—'}</td><td>${esc(r.ae)||'—'}</td><td>${esc(r.sub)||'—'}</td><td>${esc(r.service)||'—'}</td><td>${esc(r.order)||'—'}</td><td>${esc(r.plan)||'—'}</td><td>${esc(r.cluster)||'—'}</td><td>${perfFmt(r.poin)}</td><td>${perfMoney(r.revenue)}</td></tr>`).join(''):'<tr><td colspan="11" class="empty">Belum ada aktivasi bulan ini.</td></tr>';
 }
 $('perfAsm').addEventListener('change',()=>{if(perfLoaded)renderPerformance()});
 $('perfAe').addEventListener('change',()=>{if(perfLoaded)renderPerformance()});
+$('perfCompareAsm').addEventListener('change',()=>{if(perfLoaded)renderPerformance()});
 setInterval(()=>{if(perfLoaded && $('performancePane') && !$('performancePane').classList.contains('pane-hidden'))loadPerformance()},300000);
 
 </script>
