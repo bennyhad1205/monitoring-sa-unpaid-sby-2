@@ -378,7 +378,7 @@ tbody tr:hover{background:#202b36!important}
   <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN INI</div><div class="num" id="pTotal">—</div><div class="perf-sub">Semua status layanan</div></div>
   <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN LALU</div><div class="num" id="pPrev">—</div><div class="perf-sub">Sampai tanggal pilihan</div><div class="field" style="margin-top:10px"><label for="perfCompareDate">PILIH TANGGAL BATAS PERBANDINGAN</label><input id="perfCompareDate" type="date" aria-label="Pilih tanggal batas perbandingan bulan lalu" style="width:100%;max-width:220px"></div></div>
   <div class="card perf-kpi"><div class="label">SELISIH PENJUALAN</div><div class="num" id="pDiff">—</div><div class="perf-sub">Bulan ini dikurangi bulan lalu</div></div>
-  <div class="card perf-kpi perf-growth-projection"><div class="label">RUNRATE / PROYEKSI AKHIR BULAN</div><div class="num" id="pRunrate">—</div><div class="perf-sub">Estimasi total aktivasi sampai akhir bulan ini</div><div class="growth-metrics"><div class="growth-metric"><strong id="pGrowth">—</strong><span>Pertumbuhan aktual</span></div><div class="growth-metric"><strong id="pProjectedGrowth">—</strong><span>Pertumbuhan proyeksi</span></div></div><div class="perf-sub" id="pRunrateBasis">Berdasarkan rata-rata aktivasi harian</div></div>
+  <div class="card perf-kpi perf-growth-projection"><div class="label">RUNRATE / PROYEKSI AKHIR BULAN</div><div style="display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap"><div><div class="num" id="pRunrate">—</div><div class="perf-sub">Proyeksi akhir bulan ini</div></div><div style="padding-left:16px;border-left:1px solid #3b4653"><div class="num" id="pPrevMonthTotal">—</div><div class="perf-sub">Total SA bulan lalu</div></div></div><div class="growth-metrics"><div class="growth-metric"><strong id="pGrowth">—</strong><span>Pertumbuhan aktual</span></div><div class="growth-metric"><strong id="pProjectedGrowth">—</strong><span>Pertumbuhan proyeksi</span></div></div><div class="perf-sub" id="pRunrateBasis">Berdasarkan rata-rata aktivasi harian</div></div>
  </section>
  <section class="card perf-filters">
   <div class="field"><label>FILTER ASM</label><select id="perfAsm"><option value="">Semua ASM</option></select></div>
@@ -632,6 +632,7 @@ function renderPerformance(){
  const projectedGrowth=prevMonthTotal?(projected-prevMonthTotal)/prevMonthTotal*100:(projected?100:0);
  $('pTotal').textContent=perfFmt(cs);$('pPrev').textContent=perfFmt(ps);$('pDiff').textContent=(diff>0?'+':'')+perfFmt(diff);
  $('pRunrate').textContent=perfFmt(projected);
+ $('pPrevMonthTotal').textContent=perfFmt(prevMonthTotal);
  $('pGrowth').textContent=(growth>0?'+':'')+growth.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
  $('pProjectedGrowth').textContent=(projectedGrowth>0?'+':'')+projectedGrowth.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
  $('pRunrateBasis').textContent=`${perfFmt(cs)} aktivasi dalam ${elapsedDays} hari • dibanding total bulan lalu ${perfFmt(prevMonthTotal)} SA`;
