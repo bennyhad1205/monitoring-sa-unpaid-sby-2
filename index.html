@@ -353,7 +353,7 @@ tbody tr:hover{background:#202b36!important}
 <div class="note">Perhitungan aging mengikuti pilihan activation date: hari tunggakan = tanggal hari ini dikurangi service_activation_date. Data yang ditampilkan hanya invoice_status = UNPAID. Dashboard mencoba memperbarui data setiap 5 menit. Pastikan zona waktu perangkat sesuai WIB.</div>
 </div>
 </div>
-<div id="performancePane" style="display:block"><div class="page-title"><span class="title-mark">▮</span><div><h2>Performa SA <b>Surabaya 2</b></h2><small>Monitoring pencapaian aktivasi sales</small></div></div>
+<div id="performancePane" style="display:block"><div class="page-title"><span class="title-mark">▮</span><div><h2>Performa SA <b>Surabaya 2</b></h2><small>Monitoring pencapaian aktivasi sales</small></div><div class="page-date" id="liveDateTimePerf">Memuat tanggal dan jam WIB…</div></div>
  <div class="weather-live" id="sidoarjoWeatherPerf" aria-live="polite">
   <div class="weather-place"><span class="weather-pin">●</span><div><b>CUACA <select id="weatherCityPerf" aria-label="Pilih kota cuaca"><option value="sidoarjo">SIDOARJO</option><option value="surabaya">SURABAYA</option></select></b><small id="weatherUpdatedPerf">Mengambil data cuaca live…</small></div></div>
   <div class="weather-main"><span class="weather-icon" id="weatherIconPerf">⛅</span><div><strong id="weatherTempPerf">--°C</strong><small id="weatherDescPerf">Memuat kondisi cuaca</small></div></div>
@@ -364,7 +364,7 @@ tbody tr:hover{background:#202b36!important}
  <div class="error" id="perfError"></div>
  <section class="perf-kpis">
   <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN INI</div><div class="num" id="pTotal">—</div><div class="perf-sub">Semua status layanan</div></div>
-  <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN LALU</div><div class="num" id="pPrev">—</div><div class="perf-sub">Sampai tanggal yang sama</div></div>
+  <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN LALU</div><div class="num" id="pPrev">—</div><div class="perf-sub">Sampai tanggal pilihan</div><div class="field" style="margin-top:10px"><label for="perfCompareDate">PILIH TANGGAL BATAS PERBANDINGAN</label><input id="perfCompareDate" type="date" aria-label="Pilih tanggal batas perbandingan bulan lalu" style="width:100%;max-width:220px"></div></div>
   <div class="card perf-kpi"><div class="label">SELISIH PENJUALAN</div><div class="num" id="pDiff">—</div><div class="perf-sub">Bulan ini dikurangi bulan lalu</div></div>
   <div class="card perf-kpi"><div class="label">PERTUMBUHAN</div><div class="num" id="pGrowth">—</div><div class="perf-sub">Persentase dibanding bulan lalu</div></div>
  </section>
@@ -389,7 +389,7 @@ tbody tr:hover{background:#202b36!important}
   <div class="tablehead"><div><h3>Detail Aktivasi Bulan Berjalan</h3><div class="count" id="perfDetailCount">—</div></div><div class="count">Service Status hanya informasi, bukan filter penjualan</div></div>
   <div class="tablewrap perf-table"><table><thead><tr><th>No</th><th>Tanggal Aktivasi</th><th>ASM</th><th>AE / Sales Agent</th><th>Subscription ID</th><th>Service Status</th><th>Order Status</th><th>Plan</th><th>Cluster</th><th>Revenue</th></tr></thead><tbody id="perfDetailBody"><tr><td colspan="10" class="empty">Mengambil data…</td></tr></tbody></table></div>
  </section>
- <div class="note">Semua baris dengan service_activation_date pada bulan berjalan dihitung sebagai penjualan, termasuk service_status Active maupun Non Active. Perbandingan bulan lalu memakai tanggal 1 sampai tanggal kalender yang sama; jika bulan lalu lebih pendek, digunakan tanggal terakhir bulan lalu.</div>
+ <div class="note">Semua baris dengan service_activation_date pada bulan berjalan dihitung sebagai penjualan, termasuk service_status Active maupun Non Active. Perbandingan bulan lalu memakai tanggal 1 sampai tanggal batas yang dipilih pada kalender; jika bulan lalu lebih pendek, digunakan tanggal terakhir bulan lalu.</div>
 </div>
 </main>
 
@@ -597,10 +597,13 @@ window.loadPerformance=function(){
 }
 function renderPerformance(){
  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),day=now.getDate();
- const compareDay=Math.min(day,new Date(y,m,0).getDate());
+ const dateInput=$('perfCompareDate');
+ if(dateInput&&!dateInput.value){const localToday=new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().slice(0,10);dateInput.value=localToday;}
+ const selectedDate=dateInput&&dateInput.value?new Date(dateInput.value+'T12:00:00'):now;
+ const compareDay=Math.min(selectedDate.getDate(),new Date(y,m,0).getDate());
  const startNow=new Date(y,m,1),endNow=new Date(y,m,day,23,59,59);
  const startPrev=new Date(y,m-1,1),endPrev=new Date(y,m-1,compareDay,23,59,59);
- $('perfPeriod').textContent=`${perfMonthLabel(now)} • 1–${day} ${now.toLocaleDateString('id-ID',{month:'short'})} dibanding 1–${compareDay} ${startPrev.toLocaleDateString('id-ID',{month:'short'})}`;
+ $('perfPeriod').textContent=`${perfMonthLabel(now)} • 1–${day} ${now.toLocaleDateString('id-ID',{month:'short'})} dibanding 1–${compareDay} ${startPrev.toLocaleDateString('id-ID',{month:'short'})} (tanggal pembanding dipilih: ${selectedDate.toLocaleDateString('id-ID')})`;
  const inPeriod=(r,from,to)=>r.activation>=from&&r.activation<=to;
  const asmList=[...new Set(perfRows.map(r=>r.asm).filter(Boolean))].sort(),oldAsm=$('perfAsm').value;
  $('perfAsm').innerHTML='<option value="">Semua ASM</option>'+asmList.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
@@ -648,16 +651,16 @@ $('resetPerfFilters').addEventListener('click',()=>{
  if(perfLoaded) renderPerformance();
 });
 $('perfCompareAsm').addEventListener('change',()=>{if(perfLoaded)renderPerformance()});
+$('perfCompareDate').addEventListener('change',()=>{if(perfLoaded)renderPerformance()});
 setInterval(()=>{if(perfLoaded && $('performancePane') && !$('performancePane').classList.contains('pane-hidden'))loadPerformance()},300000);
 
 
 function updateLiveDateTime(){
- const el=document.getElementById('liveDateTime');
- if(!el)return;
  const now=new Date();
  const date=new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',weekday:'long',day:'2-digit',month:'long',year:'numeric'}).format(now);
  const time=new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now);
- el.textContent=date+' · '+time+' WIB';
+ const value=date+' · '+time+' WIB';
+ ['liveDateTime','liveDateTimePerf'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=value;});
 }
 updateLiveDateTime();
 setInterval(updateLiveDateTime,1000);
