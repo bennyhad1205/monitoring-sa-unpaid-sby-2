@@ -40,7 +40,7 @@ h1{font-size:clamp(20px,3vw,30px);margin:0;letter-spacing:.4px}.eyebrow{color:#e
 .perf-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:4px 0 16px}
 .perf-title{font-size:18px;font-weight:850}.perf-sub{font-size:12px;color:var(--muted);margin-top:4px}
 .perf-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:16px}
-.perf-kpi{padding:17px}.perf-kpi .label{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.7px}.perf-kpi .num{font-size:27px;font-weight:850;margin-top:8px}
+.perf-kpi{padding:17px}.perf-kpi .label{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.7px}.perf-kpi .num{font-size:27px;font-weight:850;margin-top:8px}.perf-kpi .num.positive{color:#16a34a}.perf-kpi .num.negative{color:#dc2626}.perf-kpi .num.neutral{color:var(--ink)}
 .perf-filters{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;margin-bottom:16px}
 .perf-layout{display:grid;grid-template-columns:1.2fr .8fr;gap:14px;margin-bottom:16px}
  .perf-table{overflow:auto;max-height:560px}.perf-table table{min-width:760px}
@@ -110,7 +110,7 @@ h1{font-size:clamp(20px,3vw,30px);margin:0;letter-spacing:.4px}.eyebrow{color:#e
  </section>
  <section class="card tablecard">
   <div class="tablehead"><div><h3>Detail Aktivasi Bulan Berjalan</h3><div class="count" id="perfDetailCount">—</div></div><div class="count">Service Status hanya informasi, bukan filter penjualan</div></div>
-  <div class="tablewrap perf-table"><table><thead><tr><th>No</th><th>Tanggal Aktivasi</th><th>ASM</th><th>AE / Sales Agent</th><th>Subscription ID</th><th>Service Status</th><th>Order Status</th><th>Plan</th><th>Cluster</th><th>Poin</th><th>Revenue</th></tr></thead><tbody id="perfDetailBody"><tr><td colspan="11" class="empty">Mengambil data…</td></tr></tbody></table></div>
+  <div class="tablewrap perf-table"><table><thead><tr><th>No</th><th>Tanggal Aktivasi</th><th>ASM</th><th>AE / Sales Agent</th><th>Subscription ID</th><th>Service Status</th><th>Order Status</th><th>Plan</th><th>Cluster</th><th>Revenue</th></tr></thead><tbody id="perfDetailBody"><tr><td colspan="10" class="empty">Mengambil data…</td></tr></tbody></table></div>
  </section>
  <div class="note">Semua baris dengan service_activation_date pada bulan berjalan dihitung sebagai penjualan, termasuk service_status Active maupun Non Active. Perbandingan bulan lalu memakai tanggal 1 sampai tanggal kalender yang sama; jika bulan lalu lebih pendek, digunakan tanggal terakhir bulan lalu.</div>
 </div>
@@ -287,7 +287,6 @@ window.loadPerformance=function(){
     order:perfGet(o,['order_status']),
     plan:perfGet(o,['plan']),
     cluster:perfGet(o,['clustername']),
-    poin:perfNum(perfGet(o,['poin'])),
     revenue:perfNum(perfGet(o,['revenue_before_tax']))
    }}).filter(r=>r.activation);
    perfLoaded=true;renderPerformance();
@@ -317,6 +316,10 @@ function renderPerformance(){
  const cur=base.filter(r=>inPeriod(r,startNow,endNow)),prev=base.filter(r=>inPeriod(r,startPrev,endPrev));
  const cs=cur.length,ps=prev.length,diff=cs-ps,growth=ps?diff/ps*100:(cs?100:0);
  $('pTotal').textContent=perfFmt(cs);$('pPrev').textContent=perfFmt(ps);$('pDiff').textContent=(diff>0?'+':'')+perfFmt(diff);$('pGrowth').textContent=(growth>0?'+':'')+growth.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
+ const totalClass=diff>0?'positive':diff<0?'negative':'neutral';
+ $('pTotal').className='num '+totalClass;
+ $('pDiff').className='num '+totalClass;
+ $('pGrowth').className='num '+(growth>0?'positive':growth<0?'negative':'neutral');
  // Perbandingan seluruh ASM, tidak terpengaruh filter AE.
  const asmGroups={};
  perfRows.forEach(r=>{if(!r.asm)return;asmGroups[r.asm]??={name:r.asm,cur:0,prev:0};if(inPeriod(r,startNow,endNow))asmGroups[r.asm].cur++;if(inPeriod(r,startPrev,endPrev))asmGroups[r.asm].prev++;});
@@ -338,7 +341,7 @@ function renderPerformance(){
  $('perfRanking').innerHTML=top.length?top.map(([n,v],i)=>`<div class="rank"><span class="n">${i+1}</span><span class="name">${esc(n)}</span><b>${perfFmt(v)}</b></div>`).join(''):'<div class="empty">Tidak ada data</div>';
  const ag={};cur.forEach(r=>{const k=r.asm||'ASM tidak tersedia';ag[k]=(ag[k]||0)+1});const at=Object.entries(ag).sort((x,z)=>z[1]-x[1]).slice(0,8);$('perfAsmRanking').innerHTML=at.length?at.map(([n,v],i)=>`<div class="rank"><span class="n">${i+1}</span><span class="name">${esc(n)}</span><b>${perfFmt(v)}</b></div>`).join(''):'<div class="empty">Tidak ada data</div>';
  const details=cur.slice().sort((x,z)=>z.activation-x.activation);$('perfDetailCount').textContent=perfFmt(details.length)+' aktivasi';
- $('perfDetailBody').innerHTML=details.length?details.map((r,i)=>`<tr><td>${i+1}</td><td>${fmtDate(r.activation)}</td><td>${esc(r.asm)||'—'}</td><td>${esc(r.ae)||'—'}</td><td>${esc(r.sub)||'—'}</td><td>${esc(r.service)||'—'}</td><td>${esc(r.order)||'—'}</td><td>${esc(r.plan)||'—'}</td><td>${esc(r.cluster)||'—'}</td><td>${perfFmt(r.poin)}</td><td>${perfMoney(r.revenue)}</td></tr>`).join(''):'<tr><td colspan="11" class="empty">Belum ada aktivasi bulan ini.</td></tr>';
+ $('perfDetailBody').innerHTML=details.length?details.map((r,i)=>`<tr><td>${i+1}</td><td>${fmtDate(r.activation)}</td><td>${esc(r.asm)||'—'}</td><td>${esc(r.ae)||'—'}</td><td>${esc(r.sub)||'—'}</td><td>${esc(r.service)||'—'}</td><td>${esc(r.order)||'—'}</td><td>${esc(r.plan)||'—'}</td><td>${esc(r.cluster)||'—'}</td><td>${perfMoney(r.revenue)}</td></tr>`).join(''):'<tr><td colspan="10" class="empty">Belum ada aktivasi bulan ini.</td></tr>';
 }
 $('perfAsm').addEventListener('change',()=>{if(perfLoaded)renderPerformance()});
 $('perfAe').addEventListener('change',()=>{if(perfLoaded)renderPerformance()});
