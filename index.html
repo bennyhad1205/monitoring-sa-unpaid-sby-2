@@ -381,7 +381,7 @@ tbody tr:hover{background:#202b36!important}
   <div class="weather-stat"><span>KELEMBAPAN</span><b id="weatherHumidityPerf">--%</b></div>
   <div class="weather-stat"><span>ANGIN</span><b id="weatherWindPerf">-- km/jam</b></div>
   <div class="weather-stat"><span>TERASA</span><b id="weatherFeelsPerf">--°C</b></div></div>
-<div class="perf-head"><div><div class="perf-title">Performa Sales Agent</div><div class="perf-sub" id="perfPeriod">Bulan berjalan • dibandingkan tanggal kalender yang sama bulan lalu</div></div><button class="secondary" id="perfRefresh" type="button">↻ Refresh Performa</button></div>
+<div class="perf-head"><div><div class="perf-title">Performa Sales Agent</div><div class="perf-sub" id="perfPeriod">Bulan berjalan • dibandingkan tanggal kalender yang sama bulan lalu</div></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="secondary" id="exportPerfWA" type="button" title="Salin laporan untuk WhatsApp" aria-label="Export laporan ke WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;gap:0;min-width:44px;width:44px;height:40px;padding:8px;border-color:#25D366;color:#25D366;background:#10271c"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="15" fill="#25D366"/><path fill="#FFFFFF" d="M16.02 5.2a10.7 10.7 0 0 0-9.18 16.2l-1.1 4.02 4.12-1.08a10.7 10.7 0 1 0 6.16-19.14Zm0 19.43c-1.67 0-3.31-.45-4.75-1.31l-.34-.2-3.19.84.86-3.11-.22-.35a8.75 8.75 0 1 1 7.64 4.13Zm4.81-6.56c-.26-.13-1.54-.76-1.77-.84-.23-.09-.41-.13-.58.13-.17.26-.67.84-.82 1.02-.15.17-.3.19-.56.06-.26-.13-1.09-.4-2.07-1.27-.76-.68-1.28-1.51-1.43-1.77-.15-.26-.02-.4.12-.54.12-.12.26-.3.38-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.45-.07-.13-.59-1.4-.8-1.92-.21-.5-.43-.43-.59-.44h-.5c-.17 0-.45.07-.68.33-.23.26-.9.89-.9 2.16s.92 2.51 1.05 2.68c.13.17 1.81 2.76 4.38 3.86.61.26 1.09.42 1.45.53.61.19 1.16.17 1.6.1.49-.08 1.54-.63 1.76-1.24.22-.61.22-1.13.15-1.24-.07-.11-.23-.17-.49-.3Z"/></svg></button><button class="secondary" id="perfRefresh" type="button">↻ Refresh Performa</button></div></div>
  <div class="error" id="perfError"></div>
  <section class="perf-kpis">
   <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN INI</div><div class="num" id="pTotal">—</div><div class="perf-sub">Semua status layanan</div></div>
@@ -561,6 +561,7 @@ function switchDashboard(which){
 $('tabUnpaid').addEventListener('click',()=>switchDashboard('unpaid'));
 $('tabPerformance').addEventListener('click',()=>switchDashboard('performance'));
 $('perfRefresh').addEventListener('click',()=>window.loadPerformance && window.loadPerformance());
+$('exportPerfWA').addEventListener('click',exportPerformanceWA);
 
 function perfNum(v){let n=Number(String(v??'').replace(/[^\d,.-]/g,'').replace(/\.(?=.*\.)/g,'').replace(',','.'));return Number.isFinite(n)?n:0}
 function perfDate(v){
@@ -615,6 +616,56 @@ window.loadPerformance=function(){
  // Pemetaan kolom dilakukan berdasarkan nama header, bukan posisi kolom.
  sc.src=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${PERF_GID}&tqx=${encodeURIComponent('out:json;responseHandler:handlePerformanceSheetResponse')}`;
  document.head.appendChild(sc);
+}
+
+function exportPerformanceWA(){
+ if(!perfLoaded||!perfRows.length){alert('Data Performa SA belum tersedia. Silakan refresh terlebih dahulu.');return;}
+ const now=new Date(),y=now.getFullYear(),m=now.getMonth(),day=now.getDate();
+ const dateInput=$('perfCompareDate');
+ const selectedDate=dateInput&&dateInput.value?new Date(dateInput.value+'T12:00:00'):now;
+ const compareDay=Math.min(selectedDate.getDate(),new Date(y,m,0).getDate());
+ const startNow=new Date(y,m,1),endNow=new Date(y,m,day,23,59,59);
+ const startPrev=new Date(y,m-1,1),endPrev=new Date(y,m-1,compareDay,23,59,59);
+ const inPeriod=(r,from,to)=>r.activation>=from&&r.activation<=to;
+ const asm=$('perfAsm').value,ae=$('perfAe').value;
+ const rows=perfRows.filter(r=>(!asm||r.asm===asm)&&(!ae||r.ae===ae));
+ const current=rows.filter(r=>inPeriod(r,startNow,endNow));
+ const previous=rows.filter(r=>inPeriod(r,startPrev,endPrev));
+ const previousFull=rows.filter(r=>inPeriod(r,startPrev,new Date(y,m,0,23,59,59)));
+ const groups={};
+ current.forEach(r=>{const k=r.ae||'Nama AE belum tersedia';groups[k]??={asm:r.asm||'ASM belum tersedia',ae:k,count:0};groups[k].count++;});
+ const list=Object.values(groups).sort((a,b)=>b.count-a.count||a.ae.localeCompare(b.ae,'id'));
+ const total=current.length,prev=previous.length,diff=total-prev,growth=prev?diff/prev*100:(total?100:0);
+ const elapsed=Math.max(1,day),days=new Date(y,m+1,0).getDate(),runrate=Math.round(total/elapsed*days);
+ const prevAll=previousFull.length,projectedGrowth=prevAll?(runrate-prevAll)/prevAll*100:(runrate?100:0);
+ const f=n=>Number(n||0).toLocaleString('id-ID');
+ const pct=n=>(n>0?'+':'')+n.toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
+ const dateFmt=d=>d.toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+ let lines=[
+ '🔥 *MONITORING PERFORMA SA – MORA REPUBLIC SURABAYA 2*',
+ '📅 Periode: 1–'+day+' '+now.toLocaleDateString('id-ID',{month:'long',year:'numeric'}),
+ asm?'👤 ASM: '+asm:'👥 ASM: Semua ASM',
+ ae?'🧑‍💼 AE: '+ae:'🧑‍💼 AE: Semua AE',
+ '',
+ '📊 *RINGKASAN PENCAPAIAN*',
+ '• Total SA bulan ini: *'+f(total)+'*',
+ '• SA bulan lalu s.d. '+compareDay+' '+startPrev.toLocaleDateString('id-ID',{month:'short'})+': *'+f(prev)+'*',
+ '• Selisih: *'+(diff>0?'+':'')+f(diff)+' SA*',
+ '• Pertumbuhan aktual: *'+pct(growth)+'*',
+ '• Proyeksi akhir bulan: *'+f(runrate)+' SA*',
+ '• Total SA bulan lalu (full month): *'+f(prevAll)+' SA*',
+ '• Pertumbuhan proyeksi: *'+pct(projectedGrowth)+'*',
+ '',
+ '🏆 *RANKING SELURUH AE*'
+ ];
+ if(list.length){
+   list.forEach((r,i)=>lines.push((i+1)+'. *'+r.ae+'* — '+f(r.count)+' SA'+(asm?'':' | '+r.asm)));
+ }else lines.push('_Belum ada aktivasi pada periode ini._');
+ lines.push('','📌 _Sumber: Dashboard Monitoring SA Surabaya 2_','⏱️ Dibuat: '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'}));
+ const message=lines.join('\n');
+ if(navigator.clipboard&&navigator.clipboard.writeText){
+  navigator.clipboard.writeText(message).then(()=>alert('Teks laporan berhasil disalin. Silakan tempel di grup WhatsApp.'),()=>window.prompt('Salin teks laporan berikut:',message));
+ }else window.prompt('Salin teks laporan berikut:',message);
 }
 function renderPerformance(){
  const now=new Date(),y=now.getFullYear(),m=now.getMonth(),day=now.getDate();
