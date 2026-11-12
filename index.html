@@ -350,7 +350,7 @@ tbody tr:hover{background:#202b36!important}
   <div class="weather-stat"><span>TERASA</span><b id="weatherFeels">--°C</b></div>
 </div>
 
-<div class="toolbar"><div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Menghubungkan ke Google Sheets…</span><span>•</span><span id="lastUpdate">Belum diperbarui</span></div><div class="actions"><button class="admin-login-btn" id="adminLoginBtn" style="display:none">⚙ Admin</button><button class="secondary" id="sourceBtn">⚙ Sumber Data</button><button class="secondary" id="refreshBtn">↻ Refresh</button><button id="exportBtn">↓ Export CSV</button></div></div>
+<div class="toolbar"><div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Menghubungkan ke Google Sheets…</span><span>•</span><span id="lastUpdate">Belum diperbarui</span></div><div class="actions"><button class="admin-login-btn" id="adminLoginBtn" style="display:none">⚙ Admin</button><button class="secondary" id="sourceBtn">⚙ Sumber Data</button><button class="secondary" id="refreshBtn">↻ Refresh</button><button id="exportBtn">↓ Export CSV</button><button class="secondary" id="exportUnpaidWA" type="button" title="Salin laporan tunggakan untuk WhatsApp" aria-label="Export laporan Unpaid ke WhatsApp" style="display:inline-flex;align-items:center;justify-content:center;min-width:44px;width:44px;height:40px;padding:8px;border-color:#25D366;color:#25D366;background:#10271c"><svg viewBox="0 0 32 32" width="25" height="25" aria-hidden="true" focusable="false"><circle cx="16" cy="16" r="15" fill="#25D366"/><path fill="#FFFFFF" d="M16.02 5.2a10.7 10.7 0 0 0-9.18 16.2l-1.1 4.02 4.12-1.08a10.7 10.7 0 1 0 6.16-19.14Zm0 19.43c-1.67 0-3.31-.45-4.75-1.31l-.34-.2-3.19.84.86-3.11-.22-.35a8.75 8.75 0 1 1 7.64 4.13Zm4.81-6.56c-.26-.13-1.54-.76-1.77-.84-.23-.09-.41-.13-.58.13-.17.26-.67.84-.82 1.02-.15.17-.3.19-.56.06-.26-.13-1.09-.4-2.07-1.27-.76-.68-1.28-1.51-1.43-1.77-.15-.26-.02-.4.12-.54.12-.12.26-.3.38-.45.13-.15.17-.26.26-.43.09-.17.04-.33-.02-.45-.07-.13-.59-1.4-.8-1.92-.21-.5-.43-.43-.59-.44h-.5c-.17 0-.45.07-.68.33-.23.26-.9.89-.9 2.16s.92 2.51 1.05 2.68c.13.17 1.81 2.76 4.38 3.86.61.26 1.09.42 1.45.53.61.19 1.16.17 1.6.1.49-.08 1.54-.63 1.76-1.24.22-.61.22-1.13.15-1.24-.07-.11-.23-.17-.49-.3Z"/></svg></button></div></div>
 <div class="card sourcebox" id="sourceBox"><b>Sumber Google Sheets sudah dikonfigurasi</b><div class="note">Spreadsheet ID: 1RHBB-N5TZ4LzNRRu7RVHOKWwd1ewSyBSQ1r9ZN8Q2jQ<br>Tab Pivot (Monitoring Unpaid) GID: 1539299389<br>Tab data Update (Performa SA) GID: 0<br>Metode koneksi: Google Visualization JSONP (tanpa fetch/CORS).<br><br>Agar browser dapat membaca data, buka Google Sheets → Bagikan → Akses umum → Siapa saja yang memiliki link → Pelihat (Viewer), atau gunakan Publish to web. Pastikan kebijakan perusahaan mengizinkan akses tersebut karena data pelanggan bersifat sensitif.</div></div>
 <div class="error" id="errorBox"></div>
 <section class="grid">
@@ -531,8 +531,53 @@ function renderFilters(){let asm=[...new Set(rows.map(r=>r.asm).filter(Boolean))
 function updateAE(){let a=$('asmFilter').value;let ae=[...new Set(rows.filter(r=>!a||r.asm===a).map(r=>r.ae).filter(Boolean))].sort();let old=$('aeFilter').value;$('aeFilter').innerHTML='<option value="">Semua AE</option>'+ae.map(x=>`<option>${esc(x)}</option>`).join('');$('aeFilter').value=ae.includes(old)?old:''}
 function applyFilters(){let a=$('asmFilter').value,e=$('aeFilter').value,s=$('search').value.toLowerCase();filtered=rows.filter(r=>(!a||r.asm===a)&&(!e||r.ae===e)&&(!s||[r.cust,r.sub,r.ae,r.asm].join(' ').toLowerCase().includes(s))).sort((x,y)=>y.days-x.days);render()}
 function render(){let counts=[0,0,0,0];filtered.forEach(r=>counts[r.days<=3?0:r.days<=6?1:r.days<=9?2:3]++);$('kTotal').textContent=filtered.length.toLocaleString('id-ID');['k1','k2','k3','k4'].forEach((id,i)=>$(id).textContent=counts[i].toLocaleString('id-ID'));let ranks={};filtered.forEach(r=>{let k=r.asm||'Tidak ada ASM';ranks[k]=(ranks[k]||0)+1});let top=Object.entries(ranks).sort((a,b)=>b[1]-a[1]).slice(0,6);$('asmRanking').innerHTML=top.length?top.map(([n,v],i)=>`<div class="rank"><span class="n">${i+1}</span><span class="name" title="${esc(n)}">${esc(n)}</span><b>${v}</b></div>`).join(''):'<div class="empty">Tidak ada data</div>';$('tableCount').textContent=filtered.length.toLocaleString('id-ID')+' pelanggan';$('tbody').innerHTML=filtered.length?filtered.map((r,i)=>`<tr><td>${i+1}</td><td><span class="pill ${r.group[1]}">${r.group[0]}</span></td><td>${esc(r.asm)||'—'}</td><td>${esc(r.ae)||'—'}</td><td>${fmtDate(r.date)}</td><td>${esc(r.sub)||'—'}</td><td>${esc(r.invoice)||'—'}</td><td>${esc(r.service)||'—'}</td><td><b>${r.days}</b></td><td>${esc(r.cust)||'—'}</td></tr>`).join(''):'<tr><td colspan="10" class="empty">Tidak ada pelanggan sesuai filter.</td></tr>'}
+
+function exportUnpaidWA(){
+ if(!filtered.length){alert('Tidak ada data Unpaid sesuai filter untuk diekspor.');return;}
+ const f=n=>Number(n||0).toLocaleString('id-ID');
+ const pct=n=>(n||0).toLocaleString('id-ID',{maximumFractionDigits:1})+'%';
+ const isNonActive=r=>norm(r.service)!=='active';
+ const total=filtered.length,nonActive=filtered.filter(isNonActive),active=filtered.filter(r=>!isNonActive(r));
+ const aging=[filtered.filter(r=>r.days>=1&&r.days<=3).length,filtered.filter(r=>r.days>=4&&r.days<=6).length,filtered.filter(r=>r.days>=7&&r.days<=9).length,filtered.filter(r=>r.days>9).length];
+ const asm=$('asmFilter').value,ae=$('aeFilter').value;
+ const groups={};
+ filtered.forEach(r=>{const key=(r.asm||'ASM tidak tersedia')+'||'+(r.ae||'AE tidak tersedia');groups[key]??={asm:r.asm||'ASM tidak tersedia',ae:r.ae||'AE tidak tersedia',total:0,nonActive:0,maxDays:0};groups[key].total++;if(isNonActive(r))groups[key].nonActive++;groups[key].maxDays=Math.max(groups[key].maxDays,r.days||0);});
+ const ranks=Object.values(groups).sort((a,b)=>b.nonActive-a.nonActive||b.total-a.total||b.maxDays-a.maxDays||a.ae.localeCompare(b.ae,'id'));
+ const sorted=[...filtered].sort((a,b)=>(Number(isNonActive(b))-Number(isNonActive(a)))||b.days-a.days);
+ const today=new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+ let lines=[
+ '🚨 *MONITORING KETERLAMBATAN PEMBAYARAN – SA SURABAYA 2*',
+ '📅 Update: '+today,
+ asm?'👤 ASM: '+asm:'👥 ASM: Semua ASM',
+ ae?'🧑‍💼 AE: '+ae:'🧑‍💼 AE: Semua AE',
+ '',
+ '📊 *RINGKASAN UNPAID*',
+ '• Total pelanggan UNPAID: *'+f(total)+'*',
+ '• 🔴 Service selain ACTIVE: *'+f(nonActive.length)+'*',
+ '• 🟢 Service Active/lainnya: *'+f(active.length)+'*',
+ '• Aging 1–3 hari: *'+f(aging[0])+'*',
+ '• Aging 4–6 hari: *'+f(aging[1])+'*',
+ '• Aging 7–9 hari: *'+f(aging[2])+'*',
+ '• Aging >9 hari: *'+f(aging[3])+'*',
+ '',
+ '⚠️ *PRIORITAS TINDAK LANJUT*',
+ 'Dahulukan pelanggan dengan status *NON-ACTIVE*, terutama yang memiliki tunggakan paling lama.',
+ '',
+ '🏆 *RANKING AE BERDASARKAN UNPAID*'
+ ];
+ if(ranks.length)ranks.forEach((r,i)=>lines.push((i+1)+'. *'+r.ae+'* — '+f(r.total)+' pelanggan | 🔴 Non-Active: *'+f(r.nonActive)+'* | Tertua: '+f(r.maxDays)+' hari'+(asm?'':' | '+r.asm)));
+ else lines.push('_Tidak ada data AE._');
+ lines.push('','📋 *DETAIL PELANGGAN – STATUS SELAIN ACTIVE DIDAHULUKAN*');
+ if(sorted.length)sorted.forEach((r,i)=>lines.push((i+1)+'. '+(isNonActive(r)?'🔴 *STATUS SELAIN ACTIVE*':'🟢 Active')+' | *'+(r.cust||'Nama tidak tersedia')+'* | AE: '+(r.ae||'—')+' | ASM: '+(r.asm||'—')+' | Tunggakan: *'+f(r.days)+' hari* | ID: '+(r.sub||'—')));
+ lines.push('','📌 _Sumber: Dashboard Monitoring SA Surabaya 2_','⚡ _Mohon prioritaskan follow-up dan konfirmasi status pembayaran pelanggan dengan status selain ACTIVE._','⏱️ Dibuat: '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'}));
+ const message=lines.join('\n');
+ if(navigator.clipboard&&navigator.clipboard.writeText){
+  navigator.clipboard.writeText(message).then(()=>alert('Laporan SA Unpaid berhasil disalin. Silakan tempel ke grup WhatsApp.'),()=>window.prompt('Salin laporan SA Unpaid berikut:',message));
+ }else window.prompt('Salin laporan SA Unpaid berikut:',message);
+}
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('asmFilter').addEventListener('change',()=>{updateAE();applyFilters()});$('aeFilter').addEventListener('change',applyFilters);$('search').addEventListener('input',applyFilters);$('resetBtn').onclick=()=>{$('asmFilter').value='';updateAE();$('aeFilter').value='';$('search').value='';applyFilters()};$('refreshBtn').onclick=load;$('sourceBtn').onclick=()=>$('sourceBox').classList.toggle('open');$('exportBtn').onclick=()=>{let head=['ASM','sales_agent_name','service_activation_date','subscription_id','invoice_status','service_status','Unpaid Brp Hari','Cust Name','Klasifikasi'];let data=filtered.map(r=>[r.asm,r.ae,r.activation,r.sub,r.invoice,r.service,r.days,r.cust,r.group[0]]);let csv=[head,...data].map(row=>row.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='Monitoring_Unpaid_SA_Surabaya2.csv';a.click();URL.revokeObjectURL(a.href)};
+$('exportUnpaidWA').addEventListener('click',exportUnpaidWA);
 load();timer=setInterval(load,300000);
 
 let perfRows=[],perfLoaded=false,perfLoading=false;
