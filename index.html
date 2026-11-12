@@ -340,6 +340,7 @@ tbody tr:hover{background:#202b36!important}
 <div class="navtabs" role="tablist" aria-label="Dashboard">
 <button class="navtab active" id="tabPerformance" type="button" role="tab" aria-selected="true" onclick="window.showDashboardPane('performance')">Performa SA</button>
 <button class="navtab" id="tabUnpaid" type="button" role="tab" aria-selected="false" onclick="window.showDashboardPane('unpaid')">SA Unpaid</button>
+<button class="navtab" id="tabWeather" type="button" role="tab" aria-selected="false" onclick="window.showDashboardPane('weather')">Kondisi Cuaca</button>
 </div>
 <div id="unpaidPane" class="pane-hidden" style="display:none"><div class="page-title"><span class="title-mark">▮</span><div><h2>Monitoring SA <b>Surabaya 2</b></h2><small>Customer Aging Control · Live operational dashboard</small></div><div class="page-date" id="liveDateTime">Memuat tanggal dan jam WIB…</div></div>
 <div class="weather-live" id="sidoarjoWeather" aria-live="polite">
@@ -914,23 +915,22 @@ setInterval(updateLiveDateTime,1000);
 <script>
 /* Fallback tab controller independent of data-loading scripts. */
 window.showDashboardPane = function(which) {
-  const unpaid = which === 'unpaid';
-  const up = document.getElementById('unpaidPane');
-  const pp = document.getElementById('performancePane');
-  const bu = document.getElementById('tabUnpaid');
-  const bp = document.getElementById('tabPerformance');
-  if (!up || !pp || !bu || !bp) return;
-  up.hidden = !unpaid;
-  pp.hidden = unpaid;
-  up.style.setProperty('display', unpaid ? 'block' : 'none', 'important');
-  pp.style.setProperty('display', unpaid ? 'none' : 'block', 'important');
-  up.classList.toggle('pane-hidden', !unpaid);
-  pp.classList.toggle('pane-hidden', unpaid);
-  bu.classList.toggle('active', unpaid);
-  bp.classList.toggle('active', !unpaid);
-  bu.setAttribute('aria-selected', String(unpaid));
-  bp.setAttribute('aria-selected', String(!unpaid));
-  if (!unpaid && typeof window.loadPerformance === 'function' && !window.__performanceLoaded) {
+  const panes = {
+    performance: ['performancePane','tabPerformance'],
+    unpaid: ['unpaidPane','tabUnpaid'],
+    weather: ['weatherPane','tabWeather']
+  };
+  Object.entries(panes).forEach(([key,ids])=>{
+    const pane=document.getElementById(ids[0]),tab=document.getElementById(ids[1]);
+    if(!pane||!tab)return;
+    const active=which===key;
+    pane.hidden=!active;
+    pane.style.setProperty('display',active?'block':'none','important');
+    pane.classList.toggle('pane-hidden',!active);
+    tab.classList.toggle('active',active);
+    tab.setAttribute('aria-selected',String(active));
+  });
+  if (which === 'performance' && typeof window.loadPerformance === 'function' && !window.__performanceLoaded) {
     window.__performanceLoaded = true;
     window.loadPerformance();
   }
@@ -990,4 +990,160 @@ window.showDashboardPane('performance');
 })();
 </script>
 
+
+<div id="weatherPane" class="pane-hidden" style="display:none">
+ <style>
+ #weatherPane .wx-wrap{display:grid;gap:14px;margin:16px 0}
+ #weatherPane .wx-panel{background:var(--card,#171d25);border:1px solid var(--line,#394451);border-radius:13px;padding:15px;min-width:0}
+ #weatherPane .wx-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+ #weatherPane .wx-muted{font-size:12px;color:var(--muted,#aab4c0)}
+ #weatherPane .wx-controls{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:12px 0}
+ #weatherPane .wx-controls select{padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--input,#202833);color:var(--text,#fff)}
+ #weatherPane .wx-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+ #weatherPane .wx-stat{border:1px solid var(--line);border-radius:10px;padding:11px;background:#ffffff06}
+ #weatherPane .wx-stat b{display:block;font-size:22px;color:var(--text,#fff)}
+ #weatherPane .wx-stat span{font-size:10px;letter-spacing:.6px;color:var(--muted,#aab4c0)}
+ #weatherPane .wx-tablewrap{overflow:auto;max-height:650px;border:1px solid var(--line);border-radius:10px}
+ #weatherPane table{width:100%;min-width:900px;border-collapse:collapse;font-size:12px}
+ #weatherPane th{position:sticky;top:0;background:#202a36;color:#f1c96d;text-align:left;z-index:1;padding:11px 9px;white-space:nowrap}
+ #weatherPane td{padding:10px 9px;border-top:1px solid var(--line);color:var(--text,#fff);vertical-align:top}
+ #weatherPane tr:hover td{background:#ffffff08}
+ #weatherPane .wx-alert{color:#ff7b7b;font-weight:800}
+ #weatherPane .wx-good{color:#64dba0;font-weight:800}
+ #weatherPane .wx-pill{display:inline-block;padding:4px 7px;border-radius:20px;background:#ffffff12;font-size:10px;white-space:nowrap}
+ #weatherPane .wx-radar{width:100%;height:540px;border:0;border-radius:9px;background:#101820}
+ @media(max-width:650px){#weatherPane .wx-stats{grid-template-columns:repeat(2,minmax(0,1fr))}#weatherPane .wx-panel{padding:11px}#weatherPane .wx-radar{height:420px}}
+ </style>
+ <div class="wx-wrap">
+  <section class="wx-panel">
+   <div class="wx-head">
+    <div><h2 style="margin:0">🌦️ Kondisi Cuaca per Kecamatan</h2><div class="wx-muted">Surabaya & Sidoarjo · Prakiraan resmi BMKG</div></div>
+    <span class="badge">SUMBER RESMI BMKG</span>
+   </div>
+   <div class="wx-controls">
+    <label for="wxArea">Wilayah</label>
+    <select id="wxArea"><option value="surabaya">Kota Surabaya</option><option value="sidoarjo">Kabupaten Sidoarjo</option></select>
+    <button type="button" class="secondary" id="wxRefresh">↻ Perbarui sekarang</button>
+    <a href="https://data.bmkg.go.id/prakiraan-cuaca/" target="_blank" rel="noopener" class="wx-pill">Data Terbuka BMKG ↗</a>
+   </div>
+   <div class="wx-stats">
+    <div class="wx-stat"><span>KECAMATAN TERDAFTAR</span><b id="wxDistrictCount">—</b></div>
+    <div class="wx-stat"><span>DATA PRAKIRAAN TERSEDIA</span><b id="wxAvailableCount">—</b></div>
+    <div class="wx-stat"><span>PEMERIKSAAN TERAKHIR</span><b id="wxCheckedAt" style="font-size:15px">—</b></div>
+   </div>
+   <p class="wx-muted" id="wxForecastNote" style="margin:12px 0 0">Mengambil prakiraan dari layanan resmi BMKG…</p>
+  </section>
+  <section class="wx-panel">
+   <div class="wx-head"><h3 style="margin:0">Prakiraan Cuaca per Kecamatan</h3><span class="wx-muted">Ringkasan hari prakiraan terdekat</span></div>
+   <div class="wx-tablewrap" style="margin-top:12px">
+    <table><thead><tr><th>Kecamatan</th><th>Kondisi Cuaca</th><th>Suhu</th><th>Kelembapan</th><th>Angin</th><th>Waktu Data BMKG</th><th>Detail BMKG</th></tr></thead>
+    <tbody id="wxDistrictRows"><tr><td colspan="7" class="empty">Mengambil data BMKG…</td></tr></tbody></table>
+   </div>
+   <p class="wx-muted" style="margin:10px 0 0">Catatan: ringkasan per kecamatan mengikuti data titik/kecamatan yang diterbitkan BMKG. Prakiraan bukan pengamatan hujan aktual.</p>
+  </section>
+  <section class="wx-panel">
+   <div class="wx-head"><h3 style="margin:0">⚠️ Peringatan Dini Cuaca BMKG</h3><span class="wx-muted">Nowcast · diperbarui saat ada rilis</span></div>
+   <div id="wxAlertInfo" style="margin-top:10px;font-size:13px">Memeriksa peringatan dini BMKG…</div>
+   <p class="wx-muted" style="margin:8px 0 0">Peringatan dini tersedia hingga tingkat kecamatan. Jika feed tidak dapat dibaca langsung oleh browser, gunakan tautan resmi BMKG.</p>
+   <a href="https://www.bmkg.go.id/alerts/nowcast/id" target="_blank" rel="noopener">Buka peringatan dini BMKG ↗</a>
+  </section>
+  <section class="wx-panel">
+   <div class="wx-head"><h3 style="margin:0">🛰️ Radar Hujan Aktual – Stamet Juanda</h3><span class="wx-pill">PANTAUAN RADAR</span></div>
+   <p class="wx-muted">Radar menunjukkan pantulan hujan yang terdeteksi, bukan prakiraan. Skala BMKG: 5–20 dBZ sangat ringan, 20–35 ringan, 35–45 sedang, 45–55 lebat, dan di atas 55 ekstrem.</p>
+   <iframe class="wx-radar" title="Radar Cuaca BMKG Juanda" src="https://stamet-juanda.bmkg.go.id/radar/" loading="lazy" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+   <div class="wx-muted" style="margin-top:8px">Sumber: BMKG Stasiun Meteorologi Juanda. Jika radar tidak tampil, <a href="https://stamet-juanda.bmkg.go.id/radar/" target="_blank" rel="noopener">buka radar BMKG Juanda ↗</a>.</div>
+  </section>
+ </div>
+</div>
+
+<script>
+(function(){
+ const $=id=>document.getElementById(id);
+ const base='https://datacuaca.bmkg.go.id/arcgis/rest/services/production/prakiraan_cuaca/FeatureServer';
+ const forecastPage={surabaya:'https://www.bmkg.go.id/cuaca/prakiraan-cuaca/35.78',sidoarjo:'https://www.bmkg.go.id/cuaca/prakiraan-cuaca/35.15'};
+ let busy=false,latestDistricts={surabaya:[],sidoarjo:[]},lastChecked=null;
+ const norm=v=>String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const timeWIB=d=>new Intl.DateTimeFormat('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(d)+' WIB';
+ const weatherNames={
+  '0':'Cerah','1':'Cerah berawan','2':'Cerah berawan','3':'Berawan','45':'Kabut','48':'Kabut tebal',
+  '51':'Gerimis ringan','53':'Gerimis','55':'Gerimis lebat','61':'Hujan ringan','63':'Hujan sedang','65':'Hujan lebat',
+  '80':'Hujan lokal ringan','81':'Hujan lokal sedang','82':'Hujan lokal lebat','95':'Hujan petir','96':'Hujan petir','99':'Hujan petir lebat'
+ };
+ async function arcQuery(layer,where,fields='*'){
+  const u=new URL(base+'/'+layer+'/query');
+  Object.entries({where,outFields:fields,returnGeometry:'false',f:'json',resultRecordCount:'2000'}).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetch(u.toString(),{cache:'no-store'});
+  if(!r.ok)throw new Error('BMKG ArcGIS HTTP '+r.status);
+  const j=await r.json();
+  if(j.error)throw new Error(j.error.message||'BMKG ArcGIS error');
+  return j.features||[];
+ }
+ function areaMatch(a,area){
+  const k=norm(a.kabupaten||'');
+  return area==='surabaya'?k.includes('SURABAYA'):k.includes('SIDOARJO');
+ }
+ function findForecast(attrs,features){
+  const id=norm(attrs.idlokasi);
+  let f=features.find(x=>id && (id===norm(x.attributes.no)||id===norm(x.attributes.kecamatan)));
+  if(!f && id)f=features.find(x=>norm(x.attributes.kecamatan)===id||id.includes(norm(x.attributes.kecamatan)));
+  return f;
+ }
+ function formatTemp(a){const lo=a.t_min,hi=a.t_max,avg=a.t;return lo!=null&&hi!=null?`${Math.round(lo)}–${Math.round(hi)}°C`:avg!=null?`${Math.round(avg)}°C`:'—'}
+ function formatHum(a){const lo=a.h_min,hi=a.h_max;return lo!=null&&hi!=null?`${Math.round(lo)}–${Math.round(hi)}%`:a.h!=null?`${Math.round(a.h)}%`:'—'}
+ function rowHtml(d){
+  const a=d.forecast||{},status=a.kode_cuaca!=null?(weatherNames[String(a.kode_cuaca)]||('Kode '+a.kode_cuaca)):'Data prakiraan belum terhubung';
+  const isRain=/hujan|gerimis|petir/i.test(status);
+  const district=d.name||'—';
+  const time=a.waktu_utc?timeWIB(new Date(a.waktu_utc)):'—';
+  const url=forecastPage[d.area];
+  return `<tr><td><b>${esc(district)}</b><div class="wx-muted">${esc(d.regency||'')}</div></td><td><span class="wx-pill ${isRain?'wx-alert':'wx-good'}">${esc(status)}</span></td><td>${esc(formatTemp(a))}</td><td>${esc(formatHum(a))}</td><td>${a.win_velocity!=null?esc(Math.round(a.win_velocity*10)/10)+' km/jam':'—'} ${esc(a.win_direction||'')}</td><td>${esc(time)}</td><td><a href="${url}" target="_blank" rel="noopener">BMKG ↗</a></td></tr>`;
+ }
+ async function loadForecast(){
+  if(busy)return;busy=true;
+  const area=$('wxArea').value;
+  $('wxRefresh').disabled=true;$('wxForecastNote').textContent='Mengambil data kecamatan dan prakiraan BMKG…';
+  try{
+   const [districtFeatures,forecastRows]=await Promise.all([
+    arcQuery(0,"propinsi='JAWA TIMUR'"),
+    arcQuery(1,"provinsi='JAWA TIMUR'")
+   ]);
+   const districts=districtFeatures.map(f=>f.attributes).filter(a=>areaMatch(a,area));
+   const rows=forecastRows.map(f=>f.attributes);
+   const result=districts.map(a=>{
+    const match=rows.filter(r=>{const id=norm(r.idlokasi);return id===norm(a.no)||id===norm(a.kecamatan)||id.includes(norm(a.kecamatan));})
+      .sort((x,y)=>new Date(y.waktu_utc||0)-new Date(x.waktu_utc||0))[0];
+    return {name:a.kecamatan,regency:a.kabupaten,code:a.no,area,forecast:match||null};
+   }).sort((a,b)=>a.name.localeCompare(b.name,'id'));
+   latestDistricts[area]=result;
+   $('wxDistrictCount').textContent=result.length||'—';
+   $('wxAvailableCount').textContent=result.filter(d=>d.forecast).length;
+   $('wxDistrictRows').innerHTML=result.length?result.map(rowHtml).join(''):'<tr><td colspan="7">Daftar kecamatan belum berhasil dimuat dari BMKG.</td></tr>';
+   lastChecked=new Date();$('wxCheckedAt').textContent=timeWIB(lastChecked);
+   const analysis=rows.map(r=>r.waktu_utc).filter(Boolean).sort().at(-1);
+   $('wxForecastNote').textContent='Pemeriksaan dashboard: '+timeWIB(lastChecked)+'. Waktu data BMKG mengikuti kolom waktu prakiraan. BMKG memperbarui prakiraan 2 kali sehari; pemeriksaan dashboard berjalan setiap 5 menit.';
+   if(!result.some(d=>d.forecast))$('wxForecastNote').textContent+=' Data kecamatan berhasil dibaca, tetapi relasi kode lokasi prakiraan belum cocok; tautan BMKG per kecamatan tetap tersedia.';
+  }catch(e){
+   $('wxDistrictRows').innerHTML='<tr><td colspan="7">Data BMKG belum dapat diambil langsung dari browser. Gunakan tautan resmi BMKG untuk melihat prakiraan per kecamatan.</td></tr>';
+   $('wxForecastNote').textContent='Koneksi ke layanan data BMKG gagal atau dibatasi browser: '+e.message+'. Dashboard akan mencoba kembali otomatis.';
+   $('wxDistrictCount').textContent='—';$('wxAvailableCount').textContent='—';$('wxCheckedAt').textContent=timeWIB(new Date());
+  }finally{$('wxRefresh').disabled=false;busy=false;}
+ }
+ async function loadAlerts(){
+  const box=$('wxAlertInfo');
+  try{
+   const r=await fetch('https://www.bmkg.go.id/alerts/nowcast/id',{cache:'no-store'});
+   if(!r.ok)throw new Error('HTTP '+r.status);
+   const xml=new DOMParser().parseFromString(await r.text(),'text/xml');
+   const items=[...xml.querySelectorAll('item')];
+   const relevant=items.filter(i=>/jawa timur|surabaya|sidoarjo/i.test(i.textContent));
+   box.innerHTML=relevant.length?relevant.map(i=>`<div style="padding:9px 0;border-bottom:1px solid var(--line)"><b class="wx-alert">${esc(i.querySelector('title')?.textContent||'Peringatan dini BMKG')}</b><div>${esc(i.querySelector('description')?.textContent||'')}</div><small class="wx-muted">${esc(i.querySelector('pubDate')?.textContent||'')}</small></div>`).join(''):'<span class="wx-good">Tidak ditemukan peringatan aktif untuk Surabaya/Sidoarjo pada feed yang terbaca.</span>';
+  }catch(e){box.innerHTML='Feed peringatan dini tidak dapat dimuat langsung di browser. <a href="https://www.bmkg.go.id/alerts/nowcast/id" target="_blank" rel="noopener">Periksa peringatan dini resmi BMKG ↗</a>';}
+ }
+ $('wxArea')?.addEventListener('change',loadForecast);
+ $('wxRefresh')?.addEventListener('click',()=>{loadForecast();loadAlerts()});
+ loadForecast();loadAlerts();
+ setInterval(()=>{loadForecast();loadAlerts()},300000);
+})();
+</script>
 </body></html>
