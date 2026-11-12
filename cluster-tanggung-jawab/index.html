@@ -20,10 +20,14 @@ function group(data,key){let m=new Map;for(const r of data){let k=label(r[key]),
 function targetForDay(day,date=new Date()){const daysInMonth=new Date(date.getFullYear(),date.getMonth()+1,0).getDate();return Math.ceil(20/daysInMonth*day)}function targetLabel(value){return String(Math.ceil(value))}function draw(){let a=filtered(),n=a.length;let now=new Date(),day=now.getDate(),target=targetForDay(day,now);$('targetNow').textContent=`Tanggal ${day} · Target ${targetLabel(target)} visit / cluster`;$('targetCaption').textContent=`Target prorata ${targetLabel(target)} visit per cluster (${day}/${new Date(now.getFullYear(),now.getMonth()+1,0).getDate()} hari)`; $('total').textContent=fmt(n);let z=a.filter(zonk).length;$('zonk').textContent=fmt(z);$('zonkp').textContent=n?((100*z/n).toFixed(1)+'% dari cluster'):'0%';$('visits').textContent=fmt(a.reduce((s,r)=>s+num(r['Total Visit MTD']),0));$('visit5').textContent=fmt(a.filter(r=>num(r['Total Visit MTD'])>=target).length);$('unassigned').textContent=fmt(a.filter(r=>!text(r.ASM)||!text(r.AE)).length);for(let [id,key] of [['asmRows','ASM'],['aeRows','AE'],['kecRows','KECAMATAN']])$(id).innerHTML=group(a,key).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${fmt(v.n)}</td><td>${fmt(v.z)}</td><td>${fmt(v.vis)}</td></tr>`).join('');const rfsOrder=['P1','P2','P3','P4','P5','P6'];const rfsMap=new Map();for(const r of a){const raw=text(r['RFS Classification']);const match=raw.toUpperCase().match(/\\bP\\s*([1-6])\\b/);const key=match?'P'+match[1]:(raw||'Tidak Diklasifikasikan');const v=rfsMap.get(key)||{clusters:0,hp:0,subs:0,zonk:0};v.clusters++;v.hp+=num(r['HP Total']);v.subs+=num(r['Total Subs']);v.zonk+=zonk(r)?1:0;rfsMap.set(key,v)}const rfsKeys=[...rfsOrder.filter(k=>rfsMap.has(k)),...([...rfsMap.keys()].filter(k=>!rfsOrder.includes(k)).sort((x,y)=>x.localeCompare(y,'id')))];$('rfsRows').innerHTML=rfsKeys.map(k=>{const v=rfsMap.get(k),pen=v.hp?(100*v.subs/v.hp):0;return `<tr><td><strong>${esc(k)}</strong></td><td>${fmt(v.clusters)}</td><td>${fmt(v.hp)}</td><td>${fmt(v.subs)}</td><td>${pen.toFixed(2).replace('.',',')}%</td><td>${fmt(v.zonk)}</td></tr>`}).join('')||'<tr><td colspan="6">Tidak ada data RFS</td></tr>';const detailAsm=$('detailAsmFilter').value,detailAe=$('detailAeFilter').value;const detailRows=a.filter(r=>(!detailAsm||label(r.ASM)===detailAsm)&&(!detailAe||label(r.AE)===detailAe));const asmOptions=[...new Set(a.map(r=>label(r.ASM)))].sort((x,y)=>x.localeCompare(y,'id'));const aeBase=a.filter(r=>!detailAsm||label(r.ASM)===detailAsm);const aeOptions=[...new Set(aeBase.map(r=>label(r.AE)))].sort((x,y)=>x.localeCompare(y,'id'));const asmEl=$('detailAsmFilter'),aeEl=$('detailAeFilter');const keepAsm=asmEl.value,keepAe=aeEl.value;asmEl.innerHTML='<option value="">Semua ASM</option>'+asmOptions.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(asmOptions.includes(keepAsm))asmEl.value=keepAsm;else asmEl.value='';aeEl.innerHTML='<option value="">Semua AE</option>'+aeOptions.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(aeOptions.includes(keepAe))aeEl.value=keepAe;else aeEl.value='';const shown=detailRows.filter(r=>(!asmEl.value||label(r.ASM)===asmEl.value)&&(!aeEl.value||label(r.AE)===aeEl.value)).sort((a,b)=>label(a.AE).localeCompare(label(b.AE),'id',{sensitivity:'base'})||text(a.Clustername).localeCompare(text(b.Clustername),'id',{sensitivity:'base'}));$('detailCount').textContent=`(${fmt(shown.length)} dari ${fmt(n)} baris)`;$('details').innerHTML=shown.map(r=>{let v=num(r['Total Visit MTD']),status=v>=target?'TERCAPAI':'BELUM TERCAPAI',hp=num(r['HP Total']),subs=num(r['Total Subs']),pen=hp?(subs/hp*100):num(r['Pen Rate %']);return `<tr>${['Area Name','KECAMATAN','ASM','AE','Clustername','RFS Classification'].map(k=>`<td>${esc(k==='ASM'||k==='AE'?label(r[k]):r[k])}</td>`).join('')}<td>${fmt(hp)}</td><td>${fmt(subs)}</td><td>${pen.toFixed(2).replace('.',',')}%</td><td>${fmt(num(r['Total SA']))}</td><td>${esc(r['JUMLAH SA'])}</td><td>${fmt(v)}</td><td>${targetLabel(target)}</td><td><strong>${status}</strong></td></tr>`}).join('')||'<tr><td colspan="14">Tidak ada data untuk filter ASM/AE ini</td></tr>'}
 async function load(){
  const status=$('status');
- status.className='muted sync-loading';
- status.textContent='⟳ Mengambil data terbaru dari Google Sheets...';
+ status.className='sync-loading';
+ status.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;margin:12px 0;padding:12px 14px;border:1px solid #8a6b2d;border-radius:10px;background:#282317;color:#f2d18b;font-size:13px;line-height:1.5';
+ status.textContent='⟳ SEDANG SINKRONISASI — mengambil data terbaru dari Google Sheets...';
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),15000);
  try{
-  const resp=await fetch(SOURCE+'&_='+Date.now()+'_'+Math.random().toString(36).slice(2),{cache:'reload',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
+  const url=SOURCE+'&_='+Date.now()+'_'+Math.random().toString(36).slice(2);
+  const resp=await fetch(url,{cache:'no-store',signal:controller.signal,mode:'cors',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}});
   if(!resp.ok)throw Error('HTTP '+resp.status);
   const raw=await resp.text();
   if(!raw||raw.trim().length<20)throw Error('Respons CSV kosong atau terlalu pendek');
@@ -36,17 +40,19 @@ async function load(){
   refreshOptions();
   draw();
   const pepe=rows.find(r=>text(r.Clustername).toUpperCase().includes('PEPE RW 06'));
-  const pepeInfo=pepe?' · PEPE RW 06: Visit MTD '+text(pepe['Total Visit MTD']):' · PEPE RW 06 tidak ditemukan pada hasil CSV';
-  status.className='muted sync-ok';
-  status.textContent='✓ Data Google Sheets berhasil dimuat · '+fmt(rows.length)+' cluster'+pepeInfo+' · Sinkronisasi: '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
+  const pepeInfo=pepe?' · PEPE RW 06 SEDATI: Visit MTD '+text(pepe['Total Visit MTD']):' · PEPE RW 06 tidak ditemukan pada CSV';
+  status.className='sync-ok';
+  status.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;margin:12px 0;padding:12px 14px;border:1px solid #276b54;border-radius:10px;background:#10251f;color:#7fe0b5;font-size:13px;line-height:1.5';
+  status.textContent='✓ GOOGLE SHEETS LIVE · '+fmt(rows.length)+' cluster berhasil dimuat'+pepeInfo+' · '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
  }catch(e){
   fromLive=false;
-  status.className='muted sync-error';
-  status.textContent='⚠ Sinkronisasi gagal — dashboard masih menggunakan snapshot cadangan. Detail: '+e.message+' · '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
+  const reason=e.name==='AbortError'?'Waktu tunggu habis (lebih dari 15 detik).':e.message;
+  status.className='sync-error';
+  status.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;margin:12px 0;padding:12px 14px;border:1px solid #8a5b31;border-radius:10px;background:#2b2118;color:#ffd08a;font-size:13px;line-height:1.5';
+  status.textContent='⚠ GAGAL SINKRONISASI — '+reason+' Dashboard tidak dapat memastikan data terbaru. Periksa akses publik CSV / CORS lalu coba lagi. · '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
   console.error('Google Sheets sync failed:',e);
-  refreshOptions();
-  try{draw()}catch(renderError){status.textContent+=' · Gagal render: '+renderError.message;console.error(renderError)}
  }
+ finally{clearTimeout(timeout)}
 }
 function exportCSV(){let a=filtered();if(!a.length)return;let cols=Object.keys(a[0]),q=v=>'"'+text(v).replace(/"/g,'""')+'"',csv=[cols.map(q).join(','),...a.map(r=>cols.map(k=>q(r[k])).join(','))].join('\r\n');let blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='cluster-tanggung-jawab-filtered.csv';link.click();URL.revokeObjectURL(url)}
 function exportWhatsApp(){
