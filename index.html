@@ -568,7 +568,7 @@ function exportUnpaidWA(){
  if(ranks.length)ranks.forEach((r,i)=>lines.push((i+1)+'. *'+r.ae+'* — '+f(r.total)+' pelanggan | 🔴 Non-Active: *'+f(r.nonActive)+'* | Tertua: '+f(r.maxDays)+' hari'+(asm?'':' | '+r.asm)));
  else lines.push('_Tidak ada data AE._');
  lines.push('','📋 *DETAIL PELANGGAN – STATUS SELAIN ACTIVE DIDAHULUKAN*');
- if(sorted.length)sorted.forEach((r,i)=>lines.push((i+1)+'. '+(isNonActive(r)?'🔴 *STATUS SELAIN ACTIVE*':'🟢 Active')+' | *'+(r.cust||'Nama tidak tersedia')+'* | AE: '+(r.ae||'—')+' | ASM: '+(r.asm||'—')+' | Tunggakan: *'+f(r.days)+' hari* | ID: '+(r.sub||'—')));
+ if(sorted.length)sorted.forEach((r,i)=>{const statusLabel=String(r.service||'').trim()||'STATUS KOSONG';lines.push((i+1)+'. '+(isNonActive(r)?'🔴':'🟢')+' *'+statusLabel.toUpperCase()+'* | *'+(r.cust||'Nama tidak tersedia')+'* | AE: '+(r.ae||'—')+' | ASM: '+(r.asm||'—')+' | Tunggakan: *'+f(r.days)+' hari* | ID: '+(r.sub||'—'));});
  lines.push('','📌 _Sumber: Dashboard Monitoring SA Surabaya 2_','⚡ _Mohon prioritaskan follow-up dan konfirmasi status pembayaran pelanggan dengan status selain ACTIVE._','⏱️ Dibuat: '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'}));
  const message=lines.join('\n');
  if(navigator.clipboard&&navigator.clipboard.writeText){
