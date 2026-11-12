@@ -23,6 +23,38 @@ $('unassigned').textContent=achievementRate.toFixed(1)+'%';
 $('unassigned').style.color=achievementRate<100?'#ff6b6b':'#34d399';
 $('achievementCaption').textContent=fmt(achieved)+' dari '+fmt(n)+' cluster mencapai target';
 $('achievementCaption').style.color=achievementRate<100?'#ff9b9b':'#86efac';for(let [id,key] of [['asmRows','ASM'],['aeRows','AE'],['kecRows','KECAMATAN']])$(id).innerHTML=group(a,key).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${fmt(v.n)}</td><td>${fmt(v.z)}</td><td>${fmt(v.vis)}</td></tr>`).join('');const rfsOrder=['P1','P2','P3','P4','P5','P6'];const rfsMap=new Map();for(const r of a){const raw=text(r['RFS Classification']);const match=raw.toUpperCase().match(/\\bP\\s*([1-6])\\b/);const key=match?'P'+match[1]:(raw||'Tidak Diklasifikasikan');const v=rfsMap.get(key)||{clusters:0,hp:0,subs:0,zonk:0};v.clusters++;v.hp+=num(r['HP Total']);v.subs+=num(r['Total Subs']);v.zonk+=zonk(r)?1:0;rfsMap.set(key,v)}const rfsKeys=[...rfsOrder.filter(k=>rfsMap.has(k)),...([...rfsMap.keys()].filter(k=>!rfsOrder.includes(k)).sort((x,y)=>x.localeCompare(y,'id')))];$('rfsRows').innerHTML=rfsKeys.map(k=>{const v=rfsMap.get(k),pen=v.hp?(100*v.subs/v.hp):0;return `<tr><td><strong>${esc(k)}</strong></td><td>${fmt(v.clusters)}</td><td>${fmt(v.hp)}</td><td>${fmt(v.subs)}</td><td>${pen.toFixed(2).replace('.',',')}%</td><td>${fmt(v.zonk)}</td></tr>`}).join('')||'<tr><td colspan="6">Tidak ada data RFS</td></tr>';const detailAsm=$('detailAsmFilter').value,detailAe=$('detailAeFilter').value;const detailRows=a.filter(r=>(!detailAsm||label(r.ASM)===detailAsm)&&(!detailAe||label(r.AE)===detailAe));const asmOptions=[...new Set(a.map(r=>label(r.ASM)))].sort((x,y)=>x.localeCompare(y,'id'));const aeBase=a.filter(r=>!detailAsm||label(r.ASM)===detailAsm);const aeOptions=[...new Set(aeBase.map(r=>label(r.AE)))].sort((x,y)=>x.localeCompare(y,'id'));const asmEl=$('detailAsmFilter'),aeEl=$('detailAeFilter');const keepAsm=asmEl.value,keepAe=aeEl.value;asmEl.innerHTML='<option value="">Semua ASM</option>'+asmOptions.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(asmOptions.includes(keepAsm))asmEl.value=keepAsm;else asmEl.value='';aeEl.innerHTML='<option value="">Semua AE</option>'+aeOptions.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');if(aeOptions.includes(keepAe))aeEl.value=keepAe;else aeEl.value='';const shown=detailRows.filter(r=>(!asmEl.value||label(r.ASM)===asmEl.value)&&(!aeEl.value||label(r.AE)===aeEl.value)).sort((a,b)=>label(a.AE).localeCompare(label(b.AE),'id',{sensitivity:'base'})||text(a.Clustername).localeCompare(text(b.Clustername),'id',{sensitivity:'base'}));$('detailCount').textContent=`(${fmt(shown.length)} dari ${fmt(n)} baris)`;$('details').innerHTML=shown.map(r=>{let v=num(r['Total Visit MTD']),status=v>=target?'TERCAPAI':'BELUM TERCAPAI',hp=num(r['HP Total']),subs=num(r['Total Subs']),pen=hp?(subs/hp*100):num(r['Pen Rate %']);return `<tr>${['Area Name','KECAMATAN','ASM','AE','Clustername','RFS Classification'].map(k=>`<td>${esc(k==='ASM'||k==='AE'?label(r[k]):r[k])}</td>`).join('')}<td>${fmt(hp)}</td><td>${fmt(subs)}</td><td>${pen.toFixed(2).replace('.',',')}%</td><td>${fmt(num(r['Total SA']))}</td><td>${esc(r['JUMLAH SA'])}</td><td>${fmt(v)}</td><td>${targetLabel(target)}</td><td><strong>${status}</strong></td></tr>`}).join('')||'<tr><td colspan="14">Tidak ada data untuk filter ASM/AE ini</td></tr>'}
+const VISIT_SNAPSHOT_KEY='mr_sby2_visit_mtd_snapshot_v1';
+function clusterVisitKey(r){return text(r['Cluster Id'])||text(r.Clustername)+'|'+text(r.KECAMATAN)}
+function getYesterdayVisitSnapshot(){
+ try{
+  const saved=JSON.parse(localStorage.getItem(VISIT_SNAPSHOT_KEY)||'{}');
+  const d=new Date();d.setDate(d.getDate()-1);
+  const key=d.toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
+  return saved[key]||null;
+ }catch(e){return null}
+}
+function saveTodayVisitSnapshot(data){
+ try{
+  const saved=JSON.parse(localStorage.getItem(VISIT_SNAPSHOT_KEY)||'{}');
+  const key=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'});
+  // Jangan menimpa snapshot pertama pada hari yang sama saat tombol refresh ditekan berulang.
+  if(!saved[key]){
+   const values={};
+   data.forEach(r=>values[clusterVisitKey(r)]=num(r['Total Visit MTD']));
+   saved[key]=values;
+   const keys=Object.keys(saved).sort();
+   while(keys.length>3)delete saved[keys.shift()];
+   localStorage.setItem(VISIT_SNAPSHOT_KEY,JSON.stringify(saved));
+  }
+ }catch(e){console.warn('Snapshot Visit MTD tidak dapat disimpan:',e)}
+}
+function visitYesterdayStatus(r,previous){
+ if(!previous)return 'NO_BASELINE';
+ const key=clusterVisitKey(r),current=num(r['Total Visit MTD']);
+ if(!(key in previous))return 'NO_BASELINE';
+ const before=Number(previous[key])||0;
+ return current>before?'MARK_IN':current===before?'NOT_MARK_IN':'CHECK_DATA';
+}
 async function load(){
  const status=$('status');
  status.className='sync-loading';
@@ -42,6 +74,7 @@ async function load(){
   if(!filteredFresh.length)throw Error('Tidak ada baris BM Benny Hadiawan pada CSV terbaru');
   rows=filteredFresh;
   fromLive=true;
+  saveTodayVisitSnapshot(rows);
   refreshOptions();
   draw();
   status.className='sync-ok';
@@ -64,10 +97,12 @@ function exportWhatsApp(){
  const detailAsm=$('detailAsmFilter').value,detailAe=$('detailAeFilter').value;
  const now=new Date(),daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),day=now.getDate();
  const target=targetForDay(day,now);
- // Semua cluster tetap ditampilkan. Pada setiap AE, cluster yang belum
- // mencapai target didahulukan, dimulai dari progres paling rendah.
+ const previousSnapshot=getYesterdayVisitSnapshot();
+ // Prioritas per AE: TIDAK MARK IN KEMARIN paling atas, lalu cluster
+ // yang belum mencapai target dengan progres terendah.
  const data=base.filter(r=>(!detailAsm||label(r.ASM)===detailAsm)&&(!detailAe||label(r.AE)===detailAe))
   .sort((a,b)=>label(a.AE).localeCompare(label(b.AE),'id',{sensitivity:'base'})
+   ||(Number(visitYesterdayStatus(b,previousSnapshot)==='NOT_MARK_IN')-Number(visitYesterdayStatus(a,previousSnapshot)==='NOT_MARK_IN'))
    ||(Number(num(a['Total Visit MTD'])>=target)-Number(num(b['Total Visit MTD'])>=target))
    ||(num(a['Total Visit MTD'])/Math.max(target,1))-(num(b['Total Visit MTD'])/Math.max(target,1))
    ||text(a.Clustername).localeCompare(text(b.Clustername),'id',{sensitivity:'base'}));
@@ -75,6 +110,8 @@ function exportWhatsApp(){
  const belowCount=data.filter(r=>num(r['Total Visit MTD'])<target).length;
  const groups=new Map();
  data.forEach(r=>{const key=label(r.AE)||'AE BELUM DITUGASKAN';if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)});
+ const notMarked=data.filter(r=>visitYesterdayStatus(r,previousSnapshot)==='NOT_MARK_IN');
+ const needsCheck=data.filter(r=>visitYesterdayStatus(r,previousSnapshot)==='CHECK_DATA');
  const dateText=now.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
  const lines=[];
  lines.push('*MONITORING VISIT MTD — CLUSTER*');
@@ -84,18 +121,36 @@ function exportWhatsApp(){
  lines.push('Total cluster: *'+data.length+'* | Belum target: *'+belowCount+'*');
  if(ae)lines.push('Filter AE: '+ae);
  lines.push('');
+ lines.push('*MONITORING MARK IN KEMARIN*');
+ if(!previousSnapshot){
+  lines.push('⚠️ Belum ada data pembanding hari sebelumnya pada browser ini.');
+ }else{
+  lines.push('Tidak Mark In Kemarin: *'+notMarked.length+' cluster*');
+  if(notMarked.length){
+   const noMarkGroups=new Map();
+   notMarked.forEach(r=>{const k=label(r.AE)||'AE BELUM DITUGASKAN';if(!noMarkGroups.has(k))noMarkGroups.set(k,[]);noMarkGroups.get(k).push(r)});
+   for(const [name,items] of noMarkGroups){
+    lines.push('*AE: '+name+'*');
+    items.forEach(r=>lines.push('⚠️ '+text(r.Clustername)+' — Visit MTD: '+fmt(num(r['Total Visit MTD']))));
+   }
+  }else lines.push('✅ Semua cluster mengalami kenaikan Visit MTD.');
+  if(needsCheck.length)lines.push('Perlu cek data (Visit MTD menurun): *'+needsCheck.length+' cluster*');
+ }
+ lines.push('');
  for(const [aeName,items] of groups){
   lines.push('*AE: '+aeName+'*');
   for(const r of items){
    const visit=num(r['Total Visit MTD']);
    const status=visit>=target?'TERCAPAI':'BELUM TARGET';
    const marker=visit>=target?'✅':'⚠️';
-   lines.push(marker+' *'+(text(r.Clustername)||'Nama cluster tidak tersedia')+'*');
+   const markStatus=visitYesterdayStatus(r,previousSnapshot);
+   const markTag=markStatus==='NOT_MARK_IN'?' ⚠️ *TIDAK MARK IN KEMARIN*':markStatus==='CHECK_DATA'?' ⚠️ *PERLU CEK DATA*':'';
+   lines.push(marker+' *'+(text(r.Clustername)||'Nama cluster tidak tersedia')+'*'+markTag);
    lines.push('  Visit MTD: *'+fmt(visit)+' / '+targetLabel(target)+'*  — '+(visit>=target?'✅ *TERCAPAI*':'⚠️ *WARNING — BELUM TARGET*'));
   }
   lines.push('');
  }
- lines.push('_Prioritas kunjungan: cluster BELUM TARGET ditampilkan lebih dahulu pada setiap AE._');
+ lines.push('_Urutan setiap AE: TIDAK MARK IN KEMARIN paling atas, kemudian cluster BELUM TARGET._');
  lines.push('_MoraRepublic · Surabaya 2_');
  const message=lines.join('\n');
  if(navigator.clipboard&&navigator.clipboard.writeText){
