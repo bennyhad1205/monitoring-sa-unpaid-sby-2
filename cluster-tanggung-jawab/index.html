@@ -39,11 +39,9 @@ async function load(){
   fromLive=true;
   refreshOptions();
   draw();
-  const pepe=rows.find(r=>text(r.Clustername).toUpperCase().includes('PEPE RW 06'));
-  const pepeInfo=pepe?' · PEPE RW 06 SEDATI: Visit MTD '+text(pepe['Total Visit MTD']):' · PEPE RW 06 tidak ditemukan pada CSV';
   status.className='sync-ok';
   status.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;margin:12px 0;padding:12px 14px;border:1px solid #276b54;border-radius:10px;background:#10251f;color:#7fe0b5;font-size:13px;line-height:1.5';
-  status.textContent='✓ GOOGLE SHEETS LIVE · '+fmt(rows.length)+' cluster berhasil dimuat'+pepeInfo+' · '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
+  status.textContent='✓ GOOGLE SHEETS LIVE · '+fmt(rows.length)+' cluster berhasil dimuat · '+new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB';
  }catch(e){
   fromLive=false;
   const reason=e.name==='AbortError'?'Waktu tunggu habis (lebih dari 15 detik).':e.message;
