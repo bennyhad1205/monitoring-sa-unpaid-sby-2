@@ -48,27 +48,16 @@ function saveTodayVisitSnapshot(data){
   }
  }catch(e){console.warn('Snapshot Visit MTD tidak dapat disimpan:',e)}
 }
-function jakartaDateKey(date){
- const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Jakarta',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
- const part=type=>parts.find(p=>p.type===type)?.value||'';
- return part('year')+'-'+part('month')+'-'+part('day');
-}
 function visitYesterdayStatus(r,previous){
- // Gunakan log harian MTD dari Google Sheets sebagai sumber utama.
- // Contoh isi MTD: {2026-11-11=1, 2026-11-10=1}
- const yesterday=new Date(Date.now()-86400000);
- const yesterdayKey=jakartaDateKey(yesterday);
- if(Object.prototype.hasOwnProperty.call(r,'MTD')){
-  const mtd=text(r.MTD);
-  const dates=[...mtd.matchAll(/(\\d{4}-\\d{2}-\\d{2})\\s*=/g)].map(m=>m[1]);
-  return dates.includes(yesterdayKey)?'MARK_IN':'NOT_MARK_IN';
- }
- // Fallback untuk sumber data lama yang belum memiliki kolom MTD.
+ // Konsep awal: bandingkan Total Visit MTD hari ini dengan snapshot hari sebelumnya
+ // yang disimpan saat dashboard pertama kali berhasil dibuka pada hari tersebut.
  if(!previous)return 'NO_BASELINE';
  const key=clusterVisitKey(r),current=num(r['Total Visit MTD']);
- if(!(key in previous))return 'NO_BASELINE';
+ if(!Object.prototype.hasOwnProperty.call(previous,key))return 'NO_BASELINE';
  const before=Number(previous[key])||0;
- return current>before?'MARK_IN':current===before?'NOT_MARK_IN':'CHECK_DATA';
+ if(current>before)return 'MARK_IN';
+ if(current===before)return 'NOT_MARK_IN';
+ return 'CHECK_DATA';
 }
 async function load(){
  const status=$('status');
@@ -165,7 +154,7 @@ function exportWhatsApp(){
   }
   lines.push('');
  }
- lines.push('_Status MARK IN KEMARIN diperiksa dari catatan tanggal pada kolom MTD Google Sheets. Urutan setiap AE: TIDAK MARK IN KEMARIN paling atas, kemudian cluster BELUM TARGET._');
+ lines.push('_Status MARK IN KEMARIN dibandingkan dari perubahan Total Visit MTD terhadap snapshot hari sebelumnya di browser ini. Urutan setiap AE: TIDAK MARK IN KEMARIN paling atas, kemudian cluster BELUM TARGET._');
  lines.push('_MoraRepublic · Surabaya 2_');
  const message=lines.join('\n');
  if(navigator.clipboard&&navigator.clipboard.writeText){
