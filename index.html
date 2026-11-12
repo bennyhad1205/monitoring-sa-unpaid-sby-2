@@ -323,6 +323,15 @@ tbody tr:hover{background:#202b36!important}
 #performancePane .growth-metric strong.negative{color:#ff626d}
 @media(max-width:560px){#performancePane .growth-metric strong{font-size:16px}#performancePane .growth-metrics{gap:8px}}
 
+
+#performancePane .perf-growth-projection .growth-topline{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:end;margin-top:8px}
+#performancePane .perf-growth-projection .growth-value{min-width:0}
+#performancePane .perf-growth-projection .growth-previous{border-left:1px solid #555d68;padding-left:12px}
+#performancePane .perf-growth-projection #pPrevMonthTotal{display:block!important;visibility:visible!important;opacity:1!important;color:#fff!important;font-size:clamp(21px,2vw,30px)!important;line-height:1.2;white-space:nowrap}
+#performancePane .perf-growth-projection #pRunrate{display:block!important;visibility:visible!important;opacity:1!important;font-size:clamp(21px,2vw,30px)!important;line-height:1.2;white-space:nowrap}
+#performancePane .perf-growth-projection .growth-value .perf-sub{min-height:28px}
+@media(max-width:560px){#performancePane .perf-growth-projection .growth-topline{gap:8px}#performancePane .perf-growth-projection .growth-previous{padding-left:8px}#performancePane .perf-growth-projection #pPrevMonthTotal,#performancePane .perf-growth-projection #pRunrate{font-size:21px!important}}
+
 </style>
 </head>
 <body>
@@ -378,7 +387,7 @@ tbody tr:hover{background:#202b36!important}
   <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN INI</div><div class="num" id="pTotal">—</div><div class="perf-sub">Semua status layanan</div></div>
   <div class="card perf-kpi"><div class="label">TOTAL AKTIVASI BULAN LALU</div><div class="num" id="pPrev">—</div><div class="perf-sub">Sampai tanggal pilihan</div><div class="field" style="margin-top:10px"><label for="perfCompareDate">PILIH TANGGAL BATAS PERBANDINGAN</label><input id="perfCompareDate" type="date" aria-label="Pilih tanggal batas perbandingan bulan lalu" style="width:100%;max-width:220px"></div></div>
   <div class="card perf-kpi"><div class="label">SELISIH PENJUALAN</div><div class="num" id="pDiff">—</div><div class="perf-sub">Bulan ini dikurangi bulan lalu</div></div>
-  <div class="card perf-kpi perf-growth-projection"><div class="label">PERTUMBUHAN</div><div style="display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap"><div><div class="num" id="pRunrate">—</div><div class="perf-sub">Proyeksi akhir bulan ini</div></div><div style="padding-left:16px;border-left:1px solid #3b4653"><div class="num" id="pPrevMonthTotal">—</div><div class="perf-sub">Total SA bulan lalu</div></div></div><div class="growth-metrics"><div class="growth-metric"><strong id="pGrowth">—</strong><span>Pertumbuhan aktual</span></div><div class="growth-metric"><strong id="pProjectedGrowth">—</strong><span>Pertumbuhan proyeksi</span></div></div><div class="perf-sub" id="pRunrateBasis">Berdasarkan rata-rata aktivasi harian</div></div>
+  <div class="card perf-kpi perf-growth-projection"><div class="label">PERTUMBUHAN</div><div class="growth-topline"><div class="growth-value"><div class="num" id="pRunrate">—</div><div class="perf-sub">Proyeksi akhir bulan ini</div></div><div class="growth-value growth-previous"><div class="num" id="pPrevMonthTotal">—</div><div class="perf-sub">Total SA bulan lalu</div></div></div><div class="growth-metrics"><div class="growth-metric"><strong id="pGrowth">—</strong><span>Pertumbuhan aktual</span></div><div class="growth-metric"><strong id="pProjectedGrowth">—</strong><span>Pertumbuhan proyeksi</span></div></div><div class="perf-sub" id="pRunrateBasis">Berdasarkan rata-rata aktivasi harian</div></div>
  </section>
  <section class="card perf-filters">
   <div class="field"><label>FILTER ASM</label><select id="perfAsm"><option value="">Semua ASM</option></select></div>
@@ -387,7 +396,7 @@ tbody tr:hover{background:#202b36!important}
  </section>
  <section class="perf-layout">
   <div class="card panel"><h3>Ranking Penjualan AE</h3><div class="ranking" id="perfRanking"><div class="empty">Menunggu data…</div></div></div>
-  <div class="card panel"><h3>Ringkasan Performa ASM</h3><div class="ranking" id="perfAsmRanking"><div class="empty">Menunggu data…</div></div></div>
+  <div class="card panel"><h3>Ranking Performa ASM</h3><div class="ranking" id="perfAsmRanking"><div class="empty">Menunggu data…</div></div></div>
  </section>
  <section class="card tablecard" style="margin-bottom:16px">
   <div class="tablehead"><div><h3>Perbandingan SA per ASM</h3><div class="count" id="perfAsmCompareCount">—</div></div><div class="count">Bulan berjalan dibanding tanggal kalender yang sama bulan lalu</div></div>
