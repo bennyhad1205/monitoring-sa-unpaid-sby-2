@@ -21,52 +21,39 @@ function exportWhatsApp(){
  const base=filtered(),asm=$('detailAsmFilter').value,ae=$('detailAeFilter').value;
  const now=new Date(),daysInMonth=new Date(now.getFullYear(),now.getMonth()+1,0).getDate(),day=now.getDate();
  const target=targetForDay(day,now);
- const data=base.filter(r=>(!asm||label(r.ASM)===asm)&&(!ae||label(r.AE)===ae)&&num(r['Total Visit MTD'])<target)
-  .sort((a,b)=>label(a.AE).localeCompare(label(b.AE),'id',{sensitivity:'base'})||text(a.Clustername).localeCompare(text(b.Clustername),'id',{sensitivity:'base'}));
- if(!data.length){alert('Tidak ada cluster yang masih di bawah target Visit MTD sesuai filter.');return;}
- const f=v=>fmt(num(v));
- const pct=r=>{const hp=num(r['HP Total']),subs=num(r['Total Subs']);return (hp?subs/hp*100:num(r['Pen Rate %'])).toFixed(2).replace('.',',')+'%'};
+ // Semua cluster tetap ditampilkan. Pada setiap AE, cluster yang belum
+ // mencapai target didahulukan, dimulai dari progres paling rendah.
+ const data=base.filter(r=>(!asm||label(r.ASM)===asm)&&(!ae||label(r.AE)===ae))
+  .sort((a,b)=>label(a.AE).localeCompare(label(b.AE),'id',{sensitivity:'base'})
+   ||(Number(num(a['Total Visit MTD'])>=target)-Number(num(b['Total Visit MTD'])>=target))
+   ||(num(a['Total Visit MTD'])/Math.max(target,1))-(num(b['Total Visit MTD'])/Math.max(target,1))
+   ||text(a.Clustername).localeCompare(text(b.Clustername),'id',{sensitivity:'base'}));
+ if(!data.length){alert('Tidak ada data cluster sesuai filter ASM/AE.');return;}
+ const belowCount=data.filter(r=>num(r['Total Visit MTD'])<target).length;
  const groups=new Map();
  data.forEach(r=>{const key=label(r.AE)||'AE BELUM DITUGASKAN';if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)});
  const dateText=now.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'});
  const lines=[];
- lines.push('📍 *MONITORING CLUSTER · VISIT MTD*');
- lines.push('━━━━━━━━━━━━━━━━━━━━');
- lines.push('🧑‍💼 *ASM:* '+(asm||'Sesuai masing-masing cluster'));
- lines.push('📅 *Periode:* '+dateText);
- lines.push('🎯 *Target bulanan:* 20 visit / cluster');
- lines.push('📈 *Target berjalan:* '+targetLabel(target)+' visit / cluster');
- lines.push('🧮 *Rumus:* 20 ÷ '+daysInMonth+' hari × '+day+' hari');
- lines.push('━━━━━━━━━━━━━━━━━━━━');
- lines.push('⚠️ *DAFTAR CLUSTER BELUM CAPAI TARGET*');
- lines.push('🔎 Total: *'+data.length+' cluster* · *'+groups.size+' AE*');
- if(asm)lines.push('🧑‍💼 Filter ASM: '+asm);
- if(ae)lines.push('🧑‍💻 Filter AE: '+ae);
+ lines.push('*MONITORING VISIT MTD — CLUSTER*');
+ lines.push('ASM: *'+(asm||'SEMUA ASM')+'*');
+ lines.push('Tanggal: '+dateText);
+ lines.push('Target berjalan: *'+targetLabel(target)+' visit* (target bulanan 20 visit)');
+ lines.push('Total cluster: *'+data.length+'* | Belum target: *'+belowCount+'*');
+ if(ae)lines.push('Filter AE: '+ae);
  lines.push('');
- let no=0;
  for(const [aeName,items] of groups){
-  lines.push('👨‍💻 *AE: '+aeName+'*  _('+items.length+' cluster)_');
-  lines.push('────────────────────');
+  lines.push('*AE: '+aeName+'*');
   for(const r of items){
-   no++;
-   const visit=num(r['Total Visit MTD']),gap=Math.max(0,Math.ceil(target-visit)),progress=target>0?Math.min(100,visit/target*100):100;
-   lines.push('🔻 *'+no+'. '+(text(r.Clustername)||'Nama cluster tidak tersedia')+'*');
-   lines.push('📍 '+(text(r['Area Name'])||'-')+' · '+(text(r.KECAMATAN)||'-'));
-   lines.push('🧑‍💼 ASM: '+label(r.ASM));
-   lines.push('🏷️ RFS: '+(text(r['RFS Classification'])||'-'));
-   lines.push('🏠 HP: '+f(r['HP Total'])+'  |  👥 Subs: '+f(r['Total Subs']));
-   lines.push('📊 Penetrasi: '+pct(r));
-   lines.push('🛒 SA: '+f(r['Total SA'])+'  |  Kategori: '+(text(r['JUMLAH SA'])||'-'));
-   lines.push('🚶 Visit MTD: *'+f(visit)+' / '+targetLabel(target)+'*');
-   lines.push('📉 Progres: '+progress.toFixed(1).replace('.',',')+'%  |  ⏳ Kurang: *'+gap+' visit*');
-   lines.push('🚨 Status: *BELUM TERCAPAI*');
-   lines.push('');
+   const visit=num(r['Total Visit MTD']);
+   const status=visit>=target?'TERCAPAI':'BELUM TARGET';
+   const marker=visit>=target?'✓':'•';
+   lines.push(marker+' *'+(text(r.Clustername)||'Nama cluster tidak tersedia')+'*');
+   lines.push('  Visit MTD: *'+fmt(visit)+' / '+targetLabel(target)+'*  — '+status);
   }
+  lines.push('');
  }
- lines.push('━━━━━━━━━━━━━━━━━━━━');
- lines.push('📌 *Tindak lanjut:* prioritaskan kunjungan pada cluster di atas agar pencapaian minimal 20 visit per bulan terpenuhi.');
- lines.push('_Sumber: Dashboard Cluster Tanggung Jawab · MoraRepublic Surabaya 2_');
- lines.push('🕒 Dibuat otomatis: '+now.toLocaleString('id-ID',{timeZone:'Asia/Jakarta'})+' WIB');
+ lines.push('_Prioritas kunjungan: cluster BELUM TARGET ditampilkan lebih dahulu pada setiap AE._');
+ lines.push('_MoraRepublic · Surabaya 2_');
  const message=lines.join('\n');
  if(navigator.clipboard&&navigator.clipboard.writeText){
   navigator.clipboard.writeText(message).then(()=>alert('Laporan WhatsApp berhasil disalin. Silakan tempel ke grup WhatsApp.'),()=>window.prompt('Salin laporan WhatsApp berikut:',message));
