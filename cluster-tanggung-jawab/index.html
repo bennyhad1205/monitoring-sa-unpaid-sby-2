@@ -150,7 +150,7 @@ function exportWhatsApp(){
    const markStatus=visitYesterdayStatus(r,previousSnapshot);
    const markTag=markStatus==='NOT_MARK_IN'?' ⚠️ *TIDAK MARK IN KEMARIN*':markStatus==='CHECK_DATA'?' ⚠️ *PERLU CEK DATA*':'';
    lines.push(marker+' *'+(text(r.Clustername)||'Nama cluster tidak tersedia')+'*'+markTag);
-   lines.push('  Visit MTD: *'+fmt(visit)+' / '+targetLabel(target)+'*  — '+(visit>=target?'✅ *TERCAPAI*':'⚠️ *WARNING — BELUM TARGET*'));
+   lines.push('  Visit MTD: *'+fmt(visit)+' / '+targetLabel(target)+'*  — '+(visit>=target?'✅ *TERCAPAI*':'⚠️ *BELUM TARGET*'));
   }
   lines.push('');
  }
