@@ -1,31 +1,74 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101216">
-<title>Portal MoraRepublic | Surabaya 2</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal MoraRepublic Surabaya 2</title>
 <style>
 :root{--bg:#101216;--panel:#191d23;--line:#343941;--muted:#a9adb5;--text:#f4f1e9;--gold:#e5b84f;--red:#b9272f}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#4b1719 0,transparent 42%),linear-gradient(160deg,#101216,#171b21 55%,#111318);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,Roboto,Arial}
-header{padding:34px 22px 30px;background:linear-gradient(112deg,#090b0e,#251014 55%,#401519);border-bottom:3px solid var(--red)}
-.wrap{max-width:1120px;margin:auto}.brand{display:flex;align-items:center;gap:16px}.logo{width:60px;height:60px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#f0ca6a,#a96e1d);color:#17120b;border:2px solid #ffe3a0;font-size:28px;font-weight:1000;box-shadow:0 0 0 4px #ffffff12,0 8px 24px #0009}
-.eyebrow{font-size:10px;font-weight:900;letter-spacing:2.5px;color:#efc66b;margin-bottom:6px}h1{font-size:clamp(23px,4vw,36px);line-height:1.1;margin:0;font-weight:900;letter-spacing:-.6px}.sub{color:#d5d0c8;font-size:13px;margin:9px 0 0}
-main{max-width:1120px;margin:auto;padding:30px 22px 56px}.intro{margin:0 0 22px}.intro h2{font-size:18px;margin:0 0 7px}.intro p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
-.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.tile{position:relative;display:flex;flex-direction:column;min-height:230px;padding:22px;text-decoration:none;color:var(--text);background:linear-gradient(150deg,#20252d,#171b21);border:1px solid #373d47;border-radius:19px;box-shadow:0 14px 34px #0005;transition:transform .2s,border-color .2s,box-shadow .2s;overflow:hidden}.tile:hover{transform:translateY(-4px);border-color:#b88d3c;box-shadow:0 18px 38px #0008}.tile:focus-visible{outline:3px solid var(--gold);outline-offset:3px}.icon{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#442026;color:#f5d27a;font-size:24px;margin-bottom:18px}.tile h3{font-size:17px;margin:0 0 8px}.tile p{font-size:12px;line-height:1.65;color:#b6bac2;margin:0 0 22px}.open{margin-top:auto;color:#efc66b;font-size:12px;font-weight:850;letter-spacing:.2px}.arrow{display:inline-block;margin-left:5px;transition:transform .2s}.tile:hover .arrow{transform:translateX(4px)}
-footer{max-width:1120px;margin:0 auto;padding:0 22px 26px;color:#777f8c;font-size:11px}
-@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}}@media(max-width:560px){header{padding:26px 17px}.logo{width:50px;height:50px}.brand{gap:12px}main{padding:24px 14px 40px}.grid{grid-template-columns:1fr}.tile{min-height:195px;padding:19px}}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% -15%,#4b1719 0,transparent 42%),linear-gradient(160deg,#101216,#171b21 55%,#111318);color:var(--text);font:15px system-ui,Arial}
+header{padding:35px 22px;background:linear-gradient(112deg,#090b0e,#251014 55%,#401519);border-bottom:3px solid var(--red)}
+.wrap{max-width:1120px;margin:auto}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{width:60px;height:60px;border-radius:17px;display:grid;place-items:center;background:linear-gradient(145deg,#f0ca6a,#a96e1d);color:#17120b;border:2px solid #ffe3a0;font-size:28px;font-weight:1000}
+.eyebrow{font-size:10px;font-weight:900;letter-spacing:2.5px;color:#efc66b;margin-bottom:6px}
+h1{font-size:clamp(23px,4vw,36px);margin:0;font-weight:900}
+.sub{color:#d5d0c8;font-size:13px;margin:9px 0 0}
+main{max-width:1120px;margin:auto;padding:30px 22px 56px}
+.intro{margin-bottom:22px}
+.intro h2{font-size:18px;margin:0 0 7px}
+.intro p{color:var(--muted);font-size:13px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.tile{display:flex;flex-direction:column;min-height:230px;padding:22px;text-decoration:none;color:var(--text);background:linear-gradient(150deg,#20252d,#171b21);border:1px solid #373d47;border-radius:19px;box-shadow:0 14px 34px #0005;transition:.2s}
+.tile:hover{transform:translateY(-4px);border-color:#b88d3c}
+.icon{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:#442026;color:#f5d27a;font-size:24px;margin-bottom:18px}
+.tile h3{font-size:17px;margin:0 0 8px}
+.tile p{font-size:12px;line-height:1.65;color:#b6bac2;margin:0 0 22px}
+.open{margin-top:auto;color:#efc66b;font-size:12px;font-weight:850}
+footer{max-width:1120px;margin:auto;padding:0 22px 26px;color:#777f8c;font-size:11px}
+@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){header{padding:26px 17px}.logo{width:50px;height:50px}main{padding:24px 14px 40px}.grid{grid-template-columns:1fr}.tile{min-height:195px}}
 </style>
 </head>
 <body>
-<header><div class="wrap brand"><div class="logo">M</div><div><div class="eyebrow">MORAREPUBLIC · SURABAYA 2</div><h1>Portal Monitoring &amp; Performance</h1><p class="sub">Pusat akses dashboard operasional MoraRepublic Surabaya 2</p></div></div></header>
+<header>
+<div class="wrap brand">
+<div class="logo">M</div>
+<div>
+<div class="eyebrow">MORAREPUBLIC · SURABAYA 2</div>
+<h1>Portal Monitoring &amp; Performance</h1>
+<p class="sub">Pusat akses dashboard operasional MoraRepublic Surabaya 2</p>
+</div>
+</div>
+</header>
 <main>
-<section class="intro"><h2>Pilih Dashboard</h2><p>Seluruh dashboard operasional dapat dibuka dari satu halaman portal. Pilih menu di bawah untuk melanjutkan.</p></section>
-<section class="grid" aria-label="Daftar dashboard">
-<a class="tile" href="./dashboard/"><div class="icon">▥</div><h3>Dashboard Utama</h3><p>Monitoring dan analisis performa SA serta informasi pencapaian yang tersedia pada dashboard utama.</p><span class="open">BUKA DASHBOARD <span class="arrow">→</span></span></a>
-<a class="tile" href="./cluster-tanggung-jawab/"><div class="icon">⌖</div><h3>Cluster Tanggung Jawab</h3><p>Monitoring cluster, ASM, AE, target visit, status pencapaian, dan ringkasan tanggung jawab area.</p><span class="open">BUKA DASHBOARD <span class="arrow">→</span></span></a>
-<a class="tile" href="https://bennyhad1205.github.io/monitoring-wo/"><div class="icon">▤</div><h3>Monitoring WO</h3><p>Monitoring Work Order dengan filter BSM dan ASM, KPI status WO, detail data, serta fitur sorting pada header tabel.</p><span class="open">BUKA DASHBOARD <span class="arrow">→</span></span></a>
+<section class="intro">
+<h2>Pilih Dashboard</h2>
+<p>Seluruh dashboard operasional dapat dibuka melalui satu halaman portal.</p>
+</section>
+<section class="grid">
+<a class="tile" href="./dashboard/">
+<div class="icon">▥</div>
+<h3>Dashboard Utama</h3>
+<p>Monitoring dan analisis performa SA serta informasi pencapaian.</p>
+<span class="open">BUKA DASHBOARD →</span>
+</a>
+<a class="tile" href="./cluster-tanggung-jawab/">
+<div class="icon">⌖</div>
+<h3>Cluster Tanggung Jawab</h3>
+<p>Monitoring cluster, ASM, AE, target visit, dan pencapaian area.</p>
+<span class="open">BUKA DASHBOARD →</span>
+</a>
+<a class="tile" href="https://bennyhad1205.github.io/monitoring-wo/">
+<div class="icon">▤</div>
+<h3>Monitoring WO</h3>
+<p>Monitoring Work Order, KPI status WO, filter BSM dan ASM, serta detail data.</p>
+<span class="open">BUKA DASHBOARD →</span>
+</a>
 </section>
 </main>
-<footer>© MoraRepublic Surabaya 2 · Portal akses dashboard internal</footer>
-</body></html>
+<footer>© MoraRepublic Surabaya 2 · Portal Dashboard</footer>
+</body>
+</html>
